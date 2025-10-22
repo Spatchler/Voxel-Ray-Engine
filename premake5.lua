@@ -87,7 +87,7 @@ project "sandbox"
 
     postbuildcommands {
         "cp -r sandbox/res sandbox/bin/" .. outputdir,
-        "cp -r base/res sandbox/bin/" .. outputdir
+        "cp -r base/shaders sandbox/bin/" .. outputdir
     }
 
 project "base"
@@ -141,6 +141,6 @@ project "base"
     }
 
     postbuildcommands {
-        "cp -r base/res base/bin/" .. outputdir,
+        "cp -r base/shaders base/bin/" .. outputdir,
     }
 
