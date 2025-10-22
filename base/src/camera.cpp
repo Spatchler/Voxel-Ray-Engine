@@ -1,7 +1,7 @@
 #include "camera.hpp"
 
 RTVE::Camera::Camera()
-:mShader("base/res/shaders/rtvShader.vs", "base/res/shaders/rtvShader.fs"), mWorldUp(0, 1, 0) {
+:mShader("base/shaders/rtvShader.vs", "base/shaders/rtvShader.fs"), mWorldUp(0, 1, 0) {
   float vertices[] {
     -1.0f,  1.0f,
     -1.0f, -1.0f,
