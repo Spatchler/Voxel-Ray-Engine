@@ -150,7 +150,7 @@ int main() {
   world.mIndices.push_back({7, 7, 7, 7, 7, 7, 7, 7});
   world.mIndices.push_back({8, 8, 8, 8, 8, 8, 8, 8});
   world.mIndices.push_back({9, 9, 9, 9, 9, 9, 9, 9});
-  world.mIndices.push_back({10, 11, 11, 13, 10, 12, 10, 10});
+  world.mIndices.push_back({10, 11, 11, 11, 10, 11, 10, 10});
   // world.mIndices.push_back({11, 11, 11, 11, 11, 11, 11, 13});
   // world.mIndices.push_back({10, 10, 10, 10, 10, 10, 10, 10});
   // world.mIndices.push_back({13, 1, 11, 11, 11, 11, 11, 13});
@@ -158,11 +158,7 @@ int main() {
   world.mData.push_back(RTVE::VoxelData());
   (world.mData.end()-1)->color = glm::vec4(0.1, 0.1, 0.1, 1); // Air - background color
   world.mData.push_back(RTVE::VoxelData());
-  (world.mData.end()-1)->color = glm::vec4(1, 0, 0, 1);
-  world.mData.push_back(RTVE::VoxelData());
-  (world.mData.end()-1)->color = glm::vec4(0, 1, 0, 1);
-  world.mData.push_back(RTVE::VoxelData());
-  (world.mData.end()-1)->color = glm::vec4(0, 0, 1, 1);
+  (world.mData.end()-1)->color = glm::vec4(1, 1, 1, 1);
 
   camera.mPos = glm::vec3(0, 0, 0);
   camera.setDirection(0, 0);

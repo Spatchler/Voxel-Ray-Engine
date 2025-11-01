@@ -30,11 +30,18 @@ void main() {
   vec3 direction = normalize(getDirection());
   vec3 directionInv = 1/direction;
   ivec3 normal = {0, 0, 0};
-  VoxelData v = data[traverse(uCamPos, direction, directionInv, normal)];
-  v.color.r = (normal.x + 1) / 2;
-  v.color.g = (normal.y + 1) / 2;
-  v.color.b = (normal.z + 1) / 2;
-  // v.color.w = 1;
+  uint index = traverse(uCamPos, direction, directionInv, normal);
+  VoxelData v = data[index];
+  if (index == 0) {
+    fragColor = v.color;
+    return;
+  }
+  vec3 light = {0.5, 0.1, 0.76};
+  float brightness = (dot(light, normal) + 1) / 2;
+  v.color.r = max(0, v.color.r * brightness);
+  v.color.g = max(0, v.color.g * brightness);
+  v.color.b = max(0, v.color.b * brightness);
+  v.color.w = 1;
   fragColor = v.color;
 }
 
