@@ -23,17 +23,17 @@ uniform vec2 uHalfResolutionInv;
 
 vec3 getDirection();
 uint toChildIndex(vec3 pPos);
-vec3 advanceRay(vec3 pOrigin, vec3 pDirection, vec3 pDirectionInv, vec3 pNodeOrigin, uint pNodeSize);
-uint traverse(vec3 pOrigin, vec3 pDirection, vec3 pDirectionInv);
+vec3 advanceRay(vec3 pOrigin, vec3 pDirection, vec3 pDirectionInv, vec3 pNodeOrigin, uint pNodeSize, inout ivec3 pNormal);
+uint traverse(vec3 pOrigin, vec3 pDirection, vec3 pDirectionInv, inout ivec3 pNormal);
 
 void main() {
   vec3 direction = normalize(getDirection());
   vec3 directionInv = 1/direction;
-  vec3 normal;
+  ivec3 normal = {0, 0, 0};
   VoxelData v = data[traverse(uCamPos, direction, directionInv, normal)];
-  // v.color.r *= min(0, sign(directionInv.x));
-  // v.color.g *= min(0, sign(directionInv.x));
-  // v.color.b *= min(0, sign(directionInv.x));
+  v.color.r = (normal.x + 1) / 2;
+  v.color.g = (normal.y + 1) / 2;
+  v.color.b = (normal.z + 1) / 2;
   // v.color.w = 1;
   fragColor = v.color;
 }
@@ -53,7 +53,7 @@ uint toChildIndex(vec3 pPos) {
   return (localChildPos.x << 0) | (localChildPos.y << 1) | (localChildPos.z << 2); // Index in childIndices 0 - 7
 }
 
-vec3 advanceRay(vec3 pOrigin, vec3 pDirection, vec3 pDirectionInv, vec3 pNodeOrigin, uint pNodeSize) {
+vec3 advanceRay(vec3 pOrigin, vec3 pDirection, vec3 pDirectionInv, vec3 pNodeOrigin, uint pNodeSize, inout ivec3 pNormal) {
   float planeX = pNodeOrigin.x + pNodeSize*max(0.f, sign(pDirectionInv.x));
   float tx = (planeX - pOrigin.x) * pDirectionInv.x;
 
@@ -67,14 +67,18 @@ vec3 advanceRay(vec3 pOrigin, vec3 pDirection, vec3 pDirectionInv, vec3 pNodeOri
 
   vec3 pos = {0, 0, 0};
 
-  pos.x = max((pDirection.x * tmin + pOrigin.x) * int(tmin != tx), planeX * int(tmin == tx));
-  pos.y = max((pDirection.y * tmin + pOrigin.y) * int(tmin != ty), planeY * int(tmin == ty));
-  pos.z = max((pDirection.z * tmin + pOrigin.z) * int(tmin != tz), planeZ * int(tmin == tz));
+  pos.x = max((pDirection.x * tmin + pOrigin.x) * float(tmin != tx), planeX * float(tmin == tx));
+  pos.y = max((pDirection.y * tmin + pOrigin.y) * float(tmin != ty), planeY * float(tmin == ty));
+  pos.z = max((pDirection.z * tmin + pOrigin.z) * float(tmin != tz), planeZ * float(tmin == tz));
+
+  pNormal.x = int(sign(pDirectionInv.x)) * int(pos.x == planeX);
+  pNormal.y = int(sign(pDirectionInv.y)) * int(pos.y == planeY);
+  pNormal.z = int(sign(pDirectionInv.z)) * int(pos.z == planeZ);
 
   return pos;
 }
 
-vec3 aabbIntersection(vec3 pOrigin, vec3 pDirection, vec3 pDirectionInv, float pMin, float pMax) {
+vec3 aabbIntersection(vec3 pOrigin, vec3 pDirection, vec3 pDirectionInv, float pMin, float pMax, inout ivec3 pNormal) {
   float tx1 = (pMin - pOrigin.x) * pDirectionInv.x;
   float tx2 = (pMax - pOrigin.x) * pDirectionInv.x;
 
@@ -94,20 +98,31 @@ vec3 aabbIntersection(vec3 pOrigin, vec3 pDirection, vec3 pDirectionInv, float p
   tmax = min(tmax, max(tz1, tz2));
 
   if (tmin >= 0 && tmax >= tmin) {
-    vec3 pos = {pDirection.x * tmin + pOrigin.x, pDirection.y * tmin + pOrigin.y, pDirection.z * tmin + pOrigin.z}; // Calculate intersection
-    pos.x = max(0, min(uSVOSize, pos.x));
-    pos.y = max(0, min(uSVOSize, pos.y));
-    pos.z = max(0, min(uSVOSize, pos.z));
+    // vec3 pos = {pDirection.x * tmin + pOrigin.x, pDirection.y * tmin + pOrigin.y, pDirection.z * tmin + pOrigin.z}; // Calculate intersection
+    vec3 pos = {0, 0, 0};
+
+    pos.x = max((pDirection.x * tmin + pOrigin.x) * float(tmin != tx1 && tmin != tx2), max(pMin * float(tmin == tx1), pMax * float(tmin == tx2)));
+    pos.y = max((pDirection.y * tmin + pOrigin.y) * float(tmin != ty1 && tmin != ty2), max(pMin * float(tmin == ty1), pMax * float(tmin == ty2)));
+    pos.z = max((pDirection.z * tmin + pOrigin.z) * float(tmin != tz1 && tmin != tz2), max(pMin * float(tmin == tz1), pMax * float(tmin == tz2)));
+
+    pos.x = max(0.f, min(uSVOSize, pos.x));
+    pos.y = max(0.f, min(uSVOSize, pos.y));
+    pos.z = max(0.f, min(uSVOSize, pos.z));
+
+    pNormal.x = int(pos.x == 0.f);
+    pNormal.y = int(pos.y == 0.f);
+    pNormal.z = int(pos.z == 0.f);
+
     return pos;
   }
   else
     return vec3(-1, -1, -1);
 }
 
-uint traverse(vec3 pOrigin, vec3 pDirection, vec3 pDirectionInv, vec3& pNormal) {
+uint traverse(vec3 pOrigin, vec3 pDirection, vec3 pDirectionInv, inout ivec3 pNormal) {
   if (pOrigin.x > uSVOSize || pOrigin.x < 0 || pOrigin.y > uSVOSize || pOrigin.y < 0 || pOrigin.z > uSVOSize || pOrigin.z < 0) {
     // Ray origin not inside the SVO, carry out aabb intersection
-    pOrigin = aabbIntersection(pOrigin, pDirection, pDirectionInv, 0, uSVOSize);
+    pOrigin = aabbIntersection(pOrigin, pDirection, pDirectionInv, 0, uSVOSize, pNormal);
     if (pOrigin.x < 0) // pOrigin == vec3(-1, -1, -1)
       return 0;
     if ((pOrigin.x == 0 && pDirection.x < 0) ||
@@ -129,7 +144,7 @@ uint traverse(vec3 pOrigin, vec3 pDirection, vec3 pDirectionInv, vec3& pNormal) 
 
     // Advance ray if voxel is air
     if (nodeIndex == uMidpoint) {
-      pOrigin = advanceRay(pOrigin, pDirection, pDirectionInv, nodeOrigin, currentNodeSize);
+      pOrigin = advanceRay(pOrigin, pDirection, pDirectionInv, nodeOrigin, currentNodeSize, pNormal);
       if ((pOrigin.x <= 0 && pDirection.x < 0) ||
           (pOrigin.x >= uSVOSize && pDirection.x > 0) ||
           (pOrigin.y <= 0 && pDirection.y < 0) ||
