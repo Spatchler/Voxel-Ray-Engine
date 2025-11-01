@@ -1,24 +1,48 @@
 #version 460 core
 out vec4 fragColor;
+layout(pixel_center_integer) in vec4 gl_FragCoord;
 
 struct VoxelData {
-  bool isAir;
   vec4 color;
 };
 
-struct Node {
-  bool isLeaf;
-  uint childrenIndices[8];
-  VoxelData data;
+layout (std430, binding = 0) readonly buffer SVOindices {
+  uint indices[][8];
+};
+layout (std430, binding = 1) readonly buffer SVOdata {
+  VoxelData data[];
 };
 
-layout (std430, binding = 1) readonly buffer SVO {
-  Node data[];
-};
+// #define MAX_STACK_DEPTH 4; // maxDepth = log2(SVOsize)
 
-uniform vec3 camPos;
-uniform mat4 viewProjInv;
-uniform uint maxDepth;
+uniform int uMidpoint;
+uniform vec3 uCamPos;
+uniform mat4 uProjViewInv;
+uniform int uSVOSize;
+uniform vec2 uHalfResolutionInv;
+
+vec3 getDirection();
+uint toChildIndex(vec3 pPos);
+vec3 advanceRay(vec3 pOrigin, vec3 pDirection, vec3 pDirectionInv, vec3 pNodeOrigin, uint pNodeSize);
+uint traverse(vec3 pOrigin, vec3 pDirection, vec3 pDirectionInv);
+
+void main() {
+  vec3 direction = normalize(getDirection());
+  vec3 directionInv = 1/direction;
+  vec3 normal;
+  VoxelData v = data[traverse(uCamPos, direction, directionInv, normal)];
+  // v.color.r *= min(0, sign(directionInv.x));
+  // v.color.g *= min(0, sign(directionInv.x));
+  // v.color.b *= min(0, sign(directionInv.x));
+  // v.color.w = 1;
+  fragColor = v.color;
+}
+
+vec3 getDirection() {
+  vec4 pos = uProjViewInv * vec4(gl_FragCoord.xy * uHalfResolutionInv - 1, 1.f, gl_FragCoord.w);
+  // return pos.xyz / pos.w;
+  return pos.xyz;
+}
 
 uint toChildIndex(vec3 pPos) {
   ivec3 localChildPos = {
@@ -29,145 +53,107 @@ uint toChildIndex(vec3 pPos) {
   return (localChildPos.x << 0) | (localChildPos.y << 1) | (localChildPos.z << 2); // Index in childIndices 0 - 7
 }
 
-uint traverse(vec3 pOrigin, vec3 pDirection) {
-  pDirection = normalize(pDirection);
+vec3 advanceRay(vec3 pOrigin, vec3 pDirection, vec3 pDirectionInv, vec3 pNodeOrigin, uint pNodeSize) {
+  float planeX = pNodeOrigin.x + pNodeSize*max(0.f, sign(pDirectionInv.x));
+  float tx = (planeX - pOrigin.x) * pDirectionInv.x;
+
+  float planeY = pNodeOrigin.y + pNodeSize*max(0.f, sign(pDirectionInv.y));
+  float ty = (planeY - pOrigin.y) * pDirectionInv.y;
+
+  float planeZ = pNodeOrigin.z + pNodeSize*max(0.f, sign(pDirectionInv.z));
+  float tz = (planeZ - pOrigin.z) * pDirectionInv.z;
+
+  float tmin = min(tx, min(ty, tz));
+
+  vec3 pos = {0, 0, 0};
+
+  pos.x = max((pDirection.x * tmin + pOrigin.x) * int(tmin != tx), planeX * int(tmin == tx));
+  pos.y = max((pDirection.y * tmin + pOrigin.y) * int(tmin != ty), planeY * int(tmin == ty));
+  pos.z = max((pDirection.z * tmin + pOrigin.z) * int(tmin != tz), planeZ * int(tmin == tz));
+
+  return pos;
+}
+
+vec3 aabbIntersection(vec3 pOrigin, vec3 pDirection, vec3 pDirectionInv, float pMin, float pMax) {
+  float tx1 = (pMin - pOrigin.x) * pDirectionInv.x;
+  float tx2 = (pMax - pOrigin.x) * pDirectionInv.x;
+
+  float tmin = min(tx1, tx2);
+  float tmax = max(tx1, tx2);
+
+  float ty1 = (pMin - pOrigin.y) * pDirectionInv.y;
+  float ty2 = (pMax - pOrigin.y) * pDirectionInv.y;
+
+  tmin = max(tmin, min(ty1, ty2));
+  tmax = min(tmax, max(ty1, ty2));
+
+  float tz1 = (pMin - pOrigin.z) * pDirectionInv.z;
+  float tz2 = (pMax - pOrigin.z) * pDirectionInv.z;
+
+  tmin = max(tmin, min(tz1, tz2));
+  tmax = min(tmax, max(tz1, tz2));
+
+  if (tmin >= 0 && tmax >= tmin) {
+    vec3 pos = {pDirection.x * tmin + pOrigin.x, pDirection.y * tmin + pOrigin.y, pDirection.z * tmin + pOrigin.z}; // Calculate intersection
+    pos.x = max(0, min(uSVOSize, pos.x));
+    pos.y = max(0, min(uSVOSize, pos.y));
+    pos.z = max(0, min(uSVOSize, pos.z));
+    return pos;
+  }
+  else
+    return vec3(-1, -1, -1);
+}
+
+uint traverse(vec3 pOrigin, vec3 pDirection, vec3 pDirectionInv, vec3& pNormal) {
+  if (pOrigin.x > uSVOSize || pOrigin.x < 0 || pOrigin.y > uSVOSize || pOrigin.y < 0 || pOrigin.z > uSVOSize || pOrigin.z < 0) {
+    // Ray origin not inside the SVO, carry out aabb intersection
+    pOrigin = aabbIntersection(pOrigin, pDirection, pDirectionInv, 0, uSVOSize);
+    if (pOrigin.x < 0) // pOrigin == vec3(-1, -1, -1)
+      return 0;
+    if ((pOrigin.x == 0 && pDirection.x < 0) ||
+        (pOrigin.x == uSVOSize && pDirection.x > 0) ||
+        (pOrigin.y == 0 && pDirection.y < 0) ||
+        (pOrigin.y == uSVOSize && pDirection.y > 0) ||
+        (pOrigin.z == 0 && pDirection.z < 0) ||
+        (pOrigin.z == uSVOSize && pDirection.z > 0))
+      return 0; // If ray has gone outside the tree return 0
+  }
 
   uint nodeIndex = 0;
   vec3 nodeOrigin = {0, 0, 0};
+  uint currentNodeSize = uSVOSize;
   for (;;) {
-    // Return if the node is a leaf
-    if (data[nodeIndex].isLeaf && !data[nodeIndex].data.isAir)
-      return nodeIndex;
+    // Return if the node is a leaf and is not air
+    if (nodeIndex > uMidpoint)
+      return nodeIndex - uMidpoint;
 
-    // Get child at ray origin
-    // vec3 localRayOrigin = pOrigin - nodeOrigin;
-    // uint globalChildIndex = max(data[nodeIndex].childrenIndices[toChildIndex(localRayOrigin)] - 1, 0); // Index in data array
-    // Return if ray starts in a leaf
-    // if (data[globalChildIndex].isLeaf && !data[globalChildIndex].data.isAir)
-      // return globalChildIndex;
-
-    if (data[nodeIndex].isLeaf) {
-      // Progress ray to next intersection
-      float planeX = -1;
-      float planeY = -1;
-      float planeZ = -1;
-
-      // X
-      if (pDirection.x > 0) {
-        planeX = nodeOrigin.x + 1;
-        t = (planeX - pOrigin.x) / pDirection.x;
-      }
-      else if (pDirection.x < 0) {
-        planeX = nodeOrigin.x;
-        t = (planeX - pOrigin.x) / pDirection.x;
-      }
-
-      // Y
-      if (pDirection.y > 0) {
-        planeY = nodeOrigin.y + 1;
-        float tempT = (planeY - pOrigin.y) / pDirection.y;
-        if (tempT < t) {
-          t = tempT;
-          nodeIndex = max(data[nodeIndex].childrenIndices[toChildIndex(vec3(nodeChildPos, pDirection.y, ))] - 1, 0); // Index in data array
-          continue;
-        }
-      }
-      else if (pDirection.y < 0) {
-        planeY = nodeOrigin.y;
-        t = (planeY - pOrigin.y) / pDirection.y;
-      }
-
-      // Z
-      if (pDirection.z > 0) {
-        planeZ = nodeOrigin.z + 1;
-      }
-      else if (pDirection.z < 0) {
-        planeZ = nodeOrigin.z;
-      }
-
-      if (planeX != -1) {
-        t = (planeX - pOrigin.x) / pDirection.x;
-      }
-      if (planeY != -1) {
-        t = (planeY - pOrigin.y) / pDirection.y;
-      }
-      if (planeZ != -1) {
-        t = (planeZ - pOrigin.z) / pDirection.z;
-      }
-    }
-    else {
-      // Go deeper in the tree
+    // Advance ray if voxel is air
+    if (nodeIndex == uMidpoint) {
+      pOrigin = advanceRay(pOrigin, pDirection, pDirectionInv, nodeOrigin, currentNodeSize);
+      if ((pOrigin.x <= 0 && pDirection.x < 0) ||
+          (pOrigin.x >= uSVOSize && pDirection.x > 0) ||
+          (pOrigin.y <= 0 && pDirection.y < 0) ||
+          (pOrigin.y >= uSVOSize && pDirection.y > 0) ||
+          (pOrigin.z <= 0 && pDirection.z < 0) ||
+          (pOrigin.z >= uSVOSize && pDirection.z > 0))
+        return 0; // If ray has gone outside the tree return 0
+      nodeIndex = 0; // Go back to the top of the tree
+      nodeOrigin = vec3(0, 0, 0);
+      currentNodeSize = uSVOSize;
+      continue;
     }
 
-    // Get child at ray origin
-    vec3 localRayOrigin = pOrigin - nodeOrigin;
-    ivec3 localChildPos = {
-      int(floor(localRayOrigin.x)),
-      int(floor(localRayOrigin.y)),
-      int(floor(localRayOrigin.z))
-    };
-    uint localChildIndex = (localChildPos.x << 0) | (localChildPos.y << 1) | (localChildPos.z << 2); // Index in childIndices 0 - 7
-
-    uint globalChildIndex = max(data[nodeIndex].childrenIndices[localChildIndex] - 1, 0); // Index in data array
-    // Return if ray starts in a leaf
-    if (data[globalChildIndex].isLeaf)
-      return globalChildIndex;
-
-    // Move to next intersection
-    vec3 intersectionDirection = {0, 0, 0};
-    float t = 100;
-    if (pDirection.x > 0) {
-      float x = localChildPos.x + 1;
-      t = min((x - localRayOrigin.x) / pDirection.x, t);
-    }
-    else {
-      float x = localChildPos.x - 1;
-      t = min((x - localRayOrigin.x) / pDirection.x, t);
-    }
-
-    if (pDirection.y > 0) {
-      float y = localChildPos.y + 1;
-      t = min((y - localRayOrigin.y) / pDirection.y, t);
-    }
-    else {
-      float y = localChildPos.y - 1;
-      t = min((y - localRayOrigin.y) / pDirection.y, t);
-    }
-
-    if (pDirection.z > 0) {
-      float z = localChildPos.z + 1;
-      t = min((z - localRayOrigin.z) / pDirection.z, t);
-    }
-    else {
-      float z = localChildPos.z - 1;
-      t = min((z - localRayOrigin.z) / pDirection.z, t);
-    }
-    vec3 localIntersection= {pDirection.x * t + localRayOrigin.x, pDirection.y * t + localRayOrigin.y, pDirection.z * t + localRayOrigin.z};
-    localChildPos = ivec3(
-      int(floor(localIntersection.x)),
-      int(floor(localIntersection.y)),
-      int(floor(localIntersection.z))
-    );
-    localChildIndex = (localChildPos.x << 0) | (localChildPos.y << 1) | (localChildPos.z << 2); // Index in childIndices 0 - 7
-    globalChildIndex = max(data[nodeIndex].childrenIndices[localChildIndex] - 1, 0); // Index in data array
-    if (data[globalChildIndex].isLeaf)
-      return globalChildIndex;
-
-    nodeIndex = localChildIndex;
-    pOrigin = nodeOrigin + localIntersection;
-    nodeOrigin += localChildPos;
+    // Get child at current ray origin if the ray isnt inside a leaf (going deeper in the tree)
+    currentNodeSize = currentNodeSize >> 1; // Divide current node size by 2
+    vec3 pos = pOrigin;
+    pos -= nodeOrigin;
+    pos /= currentNodeSize;
+    pos.x = max(0.0, min(1.0, floor(pos.x) + (min(0.f, sign(pDirectionInv.x)) * float(pos.x == 1))));
+    pos.y = max(0.0, min(1.0, floor(pos.y) + (min(0.f, sign(pDirectionInv.y)) * float(pos.y == 1))));
+    pos.z = max(0.0, min(1.0, floor(pos.z) + (min(0.f, sign(pDirectionInv.z)) * float(pos.z == 1))));
+    nodeOrigin += pos * currentNodeSize;
+    nodeIndex = indices[nodeIndex][toChildIndex(pos)];
   }
-
   return 0;
-}
-
-vec3 getDirection() {
-  vec4 pos = gl_FragCoord * viewProjInv;
-  return pos.xyz / pos.w;
-}
-
-void main() {
-  VoxelData v = data[traverse(camPos, getDirection())].data;
-  fragColor = v.color;
 }
 

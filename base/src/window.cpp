@@ -6,6 +6,10 @@ void RTVE::GLFWframebufferSizeCallback(GLFWwindow* pWindow, int pWidth, int pHei
   RTVE::Window::get().setViewportSize(glm::vec2(pWidth, pHeight));
 }
 
+void RTVE::GLFWmouseCallback(GLFWwindow* pWindow, double pX, double pY) {
+  RTVE::Window::get().mouseCallback(glm::vec2(pX, pY));
+}
+
 void RTVE::Window::init(const char* pTitle) {
   // GLFW Init and configure
   glfwInit();
@@ -32,7 +36,7 @@ void RTVE::Window::init(const char* pTitle) {
 
   // GLFW callbacks
   glfwSetFramebufferSizeCallback(mWindow, RTVE::GLFWframebufferSizeCallback);
-  // glfwSetCursorPosCallback(mWindow, GLFWmouseCallback);
+  glfwSetCursorPosCallback(mWindow, RTVE::GLFWmouseCallback);
   // glfwSetScrollCallback(mWindow, GLFWscrollCallback);
 
   // GLAD Load opengl function pointers
@@ -65,6 +69,14 @@ void RTVE::Window::pollEvents() {
   glfwPollEvents();
 }
 
+void RTVE::Window::captureCursor() {
+  glfwSetInputMode(mWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+}
+
+int RTVE::Window::getKeyGLFW(int pKey) {
+  return glfwGetKey(mWindow, pKey);
+}
+
 bool RTVE::Window::shouldWindowClose() {
   return glfwWindowShouldClose(mWindow);
 }
@@ -86,10 +98,5 @@ glm::vec2 RTVE::Window::getSize() {
 
 double RTVE::Window::getTime() {
   return glfwGetTime();
-}
-
-void RTVE::Window::setClearColor(glm::vec4 pClearColor) {
-  mClearColor = pClearColor;
-  glClearColor(mClearColor.x, mClearColor.y, mClearColor.z, mClearColor.w);
 }
 

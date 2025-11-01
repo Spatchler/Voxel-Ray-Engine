@@ -10,6 +10,7 @@
 
 namespace RTVE {
   void GLFWframebufferSizeCallback(GLFWwindow* pWindow, int pWidth, int pHeight);
+  void GLFWmouseCallback(GLFWwindow* pWindow, double pX, double pY);
 
   class Window {
   public:
@@ -23,6 +24,9 @@ namespace RTVE {
     void clear();
     void swapBuffers();
     void pollEvents();
+    void captureCursor();
+
+    int getKeyGLFW(int pKey);
 
     bool shouldWindowClose();
 
@@ -32,7 +36,7 @@ namespace RTVE {
 
     double getTime();
 
-    void setClearColor(glm::vec4 pClearColor);
+    std::function<void(glm::vec2)> mouseCallback;
   private:
     Window() {};
     static Window sInstance;
