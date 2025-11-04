@@ -53,8 +53,6 @@ project "sandbox"
     includedirs {
         "sandbox/include",
         "sandbox/deps/include",
-        "/usr/include/freetype2",
-        "/home/josh/Coding/c++/deps/PhysX/physx/install/linux/PhysX/include",
         "base/include"
         --"/usr/include"
     }
@@ -63,23 +61,12 @@ project "sandbox"
         "GL",
         "glfw",
         "assimp",
-        "freetype",
         "base",
-        "PhysXGpu_64",
-        "PhysXCooking_static_64",
-        "PhysXCharacterKinematic_static_64",
-        "PhysXExtensions_static_64",
-        "PhysX_static_64",
-        "PhysXPvdSDK_static_64",
-        "PhysXCommon_static_64",
-        "PhysXFoundation_static_64",
         "pthread",
         "dl",
-        "cuda",
     }
 
     libdirs {
-        "/home/josh/Coding/c++/deps/PhysX/physx/install/linux/PhysX/bin/linux.clang/checked",
         "sandbox/deps/libs",
         "base/bin/" .. outputdir
         --"/usr/lib"
@@ -111,8 +98,6 @@ project "base"
     includedirs {
         "base/include",
         "base/deps/include",
-        "/usr/include/freetype2",
-        "/home/josh/Coding/c++/deps/PhysX/physx/install/linux/PhysX/include"
         --"/usr/include"
     }
 
@@ -120,22 +105,11 @@ project "base"
         "GL",
         "glfw",
         "assimp",
-        "freetype",
-        "PhysXGpu_64",
-        "PhysXCooking_static_64",
-        "PhysXCharacterKinematic_static_64",
-        "PhysXExtensions_static_64",
-        "PhysX_static_64",
-        "PhysXPvdSDK_static_64",
-        "PhysXCommon_static_64",
-        "PhysXFoundation_static_64",
         "pthread",
         "dl",
-        "cuda"
     }
 
     libdirs {
-        "/home/josh/Coding/c++/deps/PhysX/physx/install/linux/PhysX/bin/linux.clang/checked",
         "base/deps/libs",
         --"/usr/lib"
     }
