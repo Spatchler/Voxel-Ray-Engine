@@ -23,7 +23,7 @@ namespace RTVE {
 
     void render(Window& pWindow);
 
-    void attachSVO(SparseVoxelOctree* pSVO);
+    void attachSparseVoxelDAG(SparseVoxelDAG* pSVDAG);
     
     glm::vec3 mPos;
   private:
@@ -31,11 +31,11 @@ namespace RTVE {
     glm::vec3 mFront, mUp, mRight, mWorldUp = {0, 0, 0};
     float mYaw, mPitch = 0.f;
 
-    SparseVoxelOctree* mAttachedSVO;
+    SparseVoxelDAG* mAttachedSVDAG;
     
     Shader mShader;
     uint mVAO, mVBO;
-    uint mSVOindicesSSBO, mSVOdataSSBO;
+    uint mSVDAGindicesSSBO, mSVDAGdataSSBO;
   };
 }
 

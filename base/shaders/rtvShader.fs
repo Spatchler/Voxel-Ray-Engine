@@ -6,14 +6,12 @@ struct VoxelData {
   vec4 color;
 };
 
-layout (std430, binding = 0) readonly buffer SVOindices {
+layout (std430, binding = 0) readonly buffer SVDAGindices {
   uint indices[][8];
 };
-layout (std430, binding = 1) readonly buffer SVOdata {
+layout (std430, binding = 1) readonly buffer SVDAGdata {
   VoxelData data[];
 };
-
-// #define MAX_STACK_DEPTH 4; // maxDepth = log2(SVOsize)
 
 uniform int uMidpoint;
 uniform vec3 uCamPos;
@@ -41,7 +39,6 @@ void main() {
   v.color.r = max(0, v.color.r * brightness);
   v.color.g = max(0, v.color.g * brightness);
   v.color.b = max(0, v.color.b * brightness);
-  v.color.w = 1;
   fragColor = v.color;
 }
 
@@ -78,9 +75,9 @@ vec3 advanceRay(vec3 pOrigin, vec3 pDirection, vec3 pDirectionInv, vec3 pNodeOri
   pos.y = max((pDirection.y * tmin + pOrigin.y) * float(tmin != ty), planeY * float(tmin == ty));
   pos.z = max((pDirection.z * tmin + pOrigin.z) * float(tmin != tz), planeZ * float(tmin == tz));
 
-  pNormal.x = int(sign(pDirectionInv.x)) * int(pos.x == planeX);
-  pNormal.y = int(sign(pDirectionInv.y)) * int(pos.y == planeY);
-  pNormal.z = int(sign(pDirectionInv.z)) * int(pos.z == planeZ);
+  pNormal.x = int(sign(pDirectionInv.x)) * -int(pos.x == planeX);
+  pNormal.y = int(sign(pDirectionInv.y)) * -int(pos.y == planeY);
+  pNormal.z = int(sign(pDirectionInv.z)) * -int(pos.z == planeZ);
 
   return pos;
 }
@@ -116,9 +113,9 @@ vec3 aabbIntersection(vec3 pOrigin, vec3 pDirection, vec3 pDirectionInv, float p
     pos.y = max(0.f, min(uSVOSize, pos.y));
     pos.z = max(0.f, min(uSVOSize, pos.z));
 
-    pNormal.x = int(pos.x == 0.f);
-    pNormal.y = int(pos.y == 0.f);
-    pNormal.z = int(pos.z == 0.f);
+    pNormal.x = -int(pos.x == 0.f);
+    pNormal.y = -int(pos.y == 0.f);
+    pNormal.z = -int(pos.z == 0.f);
 
     return pos;
   }

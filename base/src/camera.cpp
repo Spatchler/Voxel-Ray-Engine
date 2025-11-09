@@ -66,19 +66,19 @@ void RTVE::Camera::moveRight(float pSpeed) {
 void RTVE::Camera::render(Window& pWindow) {
   mShader.use();
   mShader.setVec3("uCamPos", mPos);
-  mShader.setInt("uSVOSize", mAttachedSVO->getSize());
+  mShader.setInt("uSVOSize", mAttachedSVDAG->getSize());
   glm::mat4 projection = glm::perspective(glm::radians(45.0f), pWindow.getSize().x / pWindow.getSize().y, 0.1f, 10000.0f);
   glm::mat4 view = glm::lookAt(mPos, mPos + mFront, mUp);
   mShader.setMat4("uProjViewInv", glm::inverse(projection * view));
-  mShader.setInt("uMidpoint", mAttachedSVO->getMidpoint());
+  mShader.setInt("uMidpoint", mAttachedSVDAG->getMidpoint());
   mShader.setVec2("uHalfResolutionInv", 2.f / pWindow.getSize());
 
   // Bind SSBO
-  glBindBuffer(GL_SHADER_STORAGE_BUFFER, mSVOindicesSSBO);
-  glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, mSVOindicesSSBO);
+  glBindBuffer(GL_SHADER_STORAGE_BUFFER, mSVDAGindicesSSBO);
+  glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, mSVDAGindicesSSBO);
 
-  glBindBuffer(GL_SHADER_STORAGE_BUFFER, mSVOdataSSBO);
-  glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, mSVOdataSSBO);
+  glBindBuffer(GL_SHADER_STORAGE_BUFFER, mSVDAGdataSSBO);
+  glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, mSVDAGdataSSBO);
 
   // Render
   glBindVertexArray(mVAO);
@@ -86,38 +86,38 @@ void RTVE::Camera::render(Window& pWindow) {
   glBindVertexArray(0);
 
   // Unbind SSBO
-  glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, mSVOindicesSSBO);
-  glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, mSVOdataSSBO);
+  glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, mSVDAGindicesSSBO);
+  glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, mSVDAGdataSSBO);
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 }
 
-void RTVE::Camera::attachSVO(SparseVoxelOctree* pSVO) {
-  mAttachedSVO = pSVO;
+void RTVE::Camera::attachSparseVoxelDAG(SparseVoxelDAG* pSVDAG) {
+  mAttachedSVDAG = pSVDAG;
 
   // Indices buffer --------------------------------------
   mShader.use();
   // Bind buffer
-  glBindAttribLocation(mShader.getID(), 0, "SVOindices");
-  glGenBuffers(1, &mSVOindicesSSBO);
-  glBindBuffer(GL_SHADER_STORAGE_BUFFER, mSVOindicesSSBO);
-  glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, mSVOindicesSSBO);
+  glBindAttribLocation(mShader.getID(), 0, "SVDAGindices");
+  glGenBuffers(1, &mSVDAGindicesSSBO);
+  glBindBuffer(GL_SHADER_STORAGE_BUFFER, mSVDAGindicesSSBO);
+  glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, mSVDAGindicesSSBO);
   // Fill buffer
-  glBufferData(GL_SHADER_STORAGE_BUFFER, pSVO->mIndices.size() * (8*sizeof(uint)), &pSVO->mIndices.at(0), GL_STATIC_DRAW);
+  glBufferData(GL_SHADER_STORAGE_BUFFER, pSVDAG->mIndices.size() * (8*sizeof(uint)), &pSVDAG->mIndices.at(0), GL_STATIC_DRAW);
   // Unbind buffer
-  glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, mSVOindicesSSBO);
+  glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, mSVDAGindicesSSBO);
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 
   // Data buffer -----------------------------------------
   mShader.use();
   // Bind buffer
-  glBindAttribLocation(mShader.getID(), 1, "SVOdata");
-  glGenBuffers(1, &mSVOdataSSBO);
-  glBindBuffer(GL_SHADER_STORAGE_BUFFER, mSVOdataSSBO);
-  glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, mSVOdataSSBO);
+  glBindAttribLocation(mShader.getID(), 1, "SVDAGdata");
+  glGenBuffers(1, &mSVDAGdataSSBO);
+  glBindBuffer(GL_SHADER_STORAGE_BUFFER, mSVDAGdataSSBO);
+  glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, mSVDAGdataSSBO);
   // Fill buffer
-  glBufferData(GL_SHADER_STORAGE_BUFFER, pSVO->mData.size() * sizeof(VoxelData), &pSVO->mData.at(0), GL_STATIC_DRAW);
+  glBufferData(GL_SHADER_STORAGE_BUFFER, pSVDAG->mData.size() * sizeof(VoxelData), &pSVDAG->mData.at(0), GL_STATIC_DRAW);
   // Unbind buffer
-  glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, mSVOdataSSBO);
+  glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, mSVDAGdataSSBO);
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 }
 

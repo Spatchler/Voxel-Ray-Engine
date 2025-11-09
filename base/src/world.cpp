@@ -1,56 +1,71 @@
 #include "world.hpp"
 
-RTVE::SparseVoxelOctree::SparseVoxelOctree(uint pSize, uint pMaxDepth)
-:mSize(pSize), mMaxDepth(pMaxDepth) {
-  // mNodes.push_back(Node());
+RTVE::SparseVoxelDAG::SparseVoxelDAG(uint pSize)
+:mSize(pSize), mMaxDepth(log2(pSize)), mMidpoint(20) {
+  mIndices.push_back({mMidpoint, mMidpoint, mMidpoint, mMidpoint, mMidpoint, mMidpoint, mMidpoint, mMidpoint});
 }
 
-void RTVE::SparseVoxelOctree::insert(const glm::vec3& pPoint, const VoxelData& pData) {
-  uint i = 1;
-  insertImpl(&i, pPoint, pData, glm::tvec3<int>(0, 0, 0), 0);
+void RTVE::SparseVoxelDAG::insert(const glm::vec3& pPoint, const VoxelData& pData) {
+  mData.push_back(pData);
+  insertImpl(pPoint, mData.size() - 1, 0, mSize, glm::vec3(0, 0, 0));
 }
 
-uint RTVE::SparseVoxelOctree::getSize() {
+uint RTVE::SparseVoxelDAG::getSize() {
   return mSize;
 }
 
-uint RTVE::SparseVoxelOctree::getMidpoint() {
-  return 10;
+uint RTVE::SparseVoxelDAG::getMidpoint() {
+  return mMidpoint;
 }
 
-void RTVE::SparseVoxelOctree::insertImpl(uint* pNodeIndex, const glm::vec3& pPoint, const VoxelData& pData, glm::tvec3<int> pPosition, uint pDepth) {
-  // // If node doesn't exist create it
-  // if (*pNodeIndex == 0) {
-  //   *pNodeIndex = mNodes.size();
-  //   mNodes.push_back(Node());
-  // }
+void RTVE::SparseVoxelDAG::print() {
+  std::println("\n------------------------------------");
+  std::println("Indices:");
+  for (auto node: mIndices) {
+    std::println("{}, {}, {}, {}, {}, {}, {}, {}", node[0], node[1], node[2], node[3], node[4], node[5], node[6], node[7]);
+  }
+  std::println("Data:");
+  for (VoxelData& node: mData) {
+    std::println("{}, {}, {}, {}", node.color.x, node.color.y, node.color.z, node.color.w);
+  }
+  std::println("------------------------------------\n");
+}
 
-  // Node& node = mNodes.at((*pNodeIndex)-1); // Minus one from node index because 0 is used as null
+uint RTVE::SparseVoxelDAG::toChildIndex(glm::vec3 pPos) {
+  glm::tvec3<int, glm::packed_highp> localChildPos = {
+    int(floor(pPos.x)),
+    int(floor(pPos.y)),
+    int(floor(pPos.z))
+  };
+  return (localChildPos.x << 0) | (localChildPos.y << 1) | (localChildPos.z << 2); // Index in childIndices 0 - 7
+}
 
-  // node.data = pData;
-  // if (pDepth == mMaxDepth) {
-  //   // Return once we reach max depth
-  //   node.isLeaf = true;
-  //   return;
-  // }
+void RTVE::SparseVoxelDAG::insertImpl(const glm::vec3& pPoint, const uint& pDataIndex, uint pNodeIndex, uint pNodeSize, glm::vec3 pNodeOrigin) {
+  // TODO: Add dynamic midpoint
+  pNodeSize = pNodeSize >> 1;
 
-  // // float size = mSize / std::exp2(pDepth); // Size at the current resolution = Total size / (2 to the power of the current depth)
-  // float size = ldexpf(mSize, pDepth);
+  glm::vec3 pos = pPoint;
+  pos -= pNodeOrigin;
+  pos /= pNodeSize;
+  pos.x = floor(pos.x);
+  pos.y = floor(pos.y);
+  pos.z = floor(pos.z);
+  pNodeOrigin += pos * (float)pNodeSize;
+  uint& node = mIndices.at(pNodeIndex)[toChildIndex(pos)];
+  pNodeIndex = node;
 
-  // glm::tvec3<int> childPos = {
-  //   pPoint.x >= (size * pPosition.x) + (size / 2.f),
-  //   pPoint.y >= (size * pPosition.y) + (size / 2.f),
-  //   pPoint.z >= (size * pPosition.z) + (size / 2.f)
-  // };
+  if (pNodeSize == 1) { // Insert data index once we reach max depth
+    node = mMidpoint + pDataIndex;
+    return;
+  }
 
-  // uint childIndex = (childPos.x << 0) | (childPos.y << 1) | (childPos.z << 2);
+  // If node doesn't exist create it
+  if (node == 0 || node == mMidpoint) {
+    pNodeIndex = mIndices.size();
+    node = mIndices.size();
+    mIndices.push_back({mMidpoint, mMidpoint, mMidpoint, mMidpoint, mMidpoint, mMidpoint, mMidpoint, mMidpoint}); // Air node
+  }
 
-  // pPosition = {
-  //   (pPosition.x << 1) | childPos.x, // Position is pased down by putting it in front of the childPos
-  //   (pPosition.y << 1) | childPos.y,
-  //   (pPosition.z << 1) | childPos.z
-  // };
-  
-  // insertImpl(&node.childrenIndices[childIndex], pPoint, pData, pPosition, ++pDepth);
+  insertImpl(pPoint, pDataIndex, pNodeIndex, pNodeSize, pNodeOrigin);
 }
 

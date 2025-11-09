@@ -1,6 +1,6 @@
 #include "RTVE.hpp"
 
-#define SVO_SIZE 1024
+#define SVO_SIZE 128
 
 glm::vec3 aabbIntersection(glm::vec3 pOrigin, glm::vec3 pDirection, glm::vec3 pDirectionInv, float pMin, float pMax, glm::vec3& pNormal) {
   float tx1 = (pMin - pOrigin.x) * pDirectionInv.x;
@@ -76,7 +76,7 @@ glm::vec3 advanceRay(glm::vec3 pOrigin, glm::vec3 pDirection, glm::vec3 pDirecti
   return pos;
 }
 
-uint traverse(RTVE::SparseVoxelOctree& pSVO, glm::vec3 pOrigin, glm::vec3 pDirection, glm::vec3& pNormal) {
+uint traverse(RTVE::SparseVoxelDAG& pSVO, glm::vec3 pOrigin, glm::vec3 pDirection, glm::vec3& pNormal) {
   pDirection = normalize(pDirection);
   glm::vec3 directionInv = 1.f/pDirection;
 
@@ -139,27 +139,29 @@ int main() {
 
   RTVE::Camera camera;
 
-  RTVE::SparseVoxelOctree world(SVO_SIZE, 1);
+  RTVE::SparseVoxelDAG world(SVO_SIZE);
 
-  world.mIndices.push_back({1, 1, 1, 1, 1, 1, 1, 1});
-  world.mIndices.push_back({2, 2, 2, 2, 2, 2, 2, 2});
-  world.mIndices.push_back({3, 3, 3, 3, 3, 3, 3, 3});
-  world.mIndices.push_back({4, 4, 4, 4, 4, 4, 4, 4});
-  world.mIndices.push_back({5, 5, 5, 5, 5, 5, 5, 5});
-  world.mIndices.push_back({6, 6, 6, 6, 6, 6, 6, 6});
-  world.mIndices.push_back({7, 7, 7, 7, 7, 7, 7, 7});
-  world.mIndices.push_back({8, 8, 8, 8, 8, 8, 8, 8});
-  world.mIndices.push_back({9, 9, 9, 9, 9, 9, 9, 9});
-  world.mIndices.push_back({10, 11, 11, 11, 10, 11, 10, 10});
-  // world.mIndices.push_back({11, 11, 11, 11, 11, 11, 11, 13});
-  // world.mIndices.push_back({10, 10, 10, 10, 10, 10, 10, 10});
-  // world.mIndices.push_back({13, 1, 11, 11, 11, 11, 11, 13});
-  // world.mIndices.push_back({10, 10, 10, 10, 10, 10, 10, 10});
-  world.mData.push_back(RTVE::VoxelData());
-  (world.mData.end()-1)->color = glm::vec4(0.1, 0.1, 0.1, 1); // Air - background color
-  world.mData.push_back(RTVE::VoxelData());
-  (world.mData.end()-1)->color = glm::vec4(1, 1, 1, 1);
+  // world.mIndices.push_back({1, 1, 1, 1, 1, 1, 1, 1});
+  // world.mIndices.push_back({2, 2, 2, 2, 2, 2, 2, 2});
+  // world.mIndices.push_back({3, 3, 3, 3, 3, 3, 3, 3});
+  // world.mIndices.push_back({4, 4, 4, 4, 4, 4, 4, 4});
+  // world.mIndices.push_back({5, 5, 5, 5, 5, 5, 5, 5});
+  // world.mIndices.push_back({6, 6, 6, 6, 6, 6, 6, 6});
+  // world.mIndices.push_back({7, 7, 7, 7, 7, 7, 7, 7});
+  // world.mIndices.push_back({8, 8, 8, 8, 8, 8, 8, 8});
+  // world.mIndices.push_back({9, 9, 9, 9, 9, 9, 9, 9});
+  // world.mIndices.push_back({10, 11, 11, 11, 10, 11, 10, 10});
+  // world.mData.push_back(RTVE::VoxelData());
+  // world.mData.back().color = glm::vec4(0.1, 0.1, 0.1, 1); // Air - background color
+  // world.mData.push_back(RTVE::VoxelData());
+  // world.mData.back().color = glm::vec4(1, 1, 1, 1);
 
+  world.mData.push_back({glm::vec4(0.1, 0.1, 0.1, 1)}); // Air - background color
+  world.insert(glm::vec3(0, 0, 0), {glm::vec4(1, 1, 1, 1)});
+  world.print();
+  world.insert(glm::vec3(10, 0, 0), {glm::vec4(10, 1, 1, 1)});
+  world.print();
+  
   camera.mPos = glm::vec3(0, 0, 0);
   camera.setDirection(0, 0);
   std::println("Camera direction: {}, {}, {}", camera.getDirectionVector().x, camera.getDirectionVector().y, camera.getDirectionVector().z);
@@ -195,7 +197,7 @@ int main() {
   std::println("{}, {}, {}, {}", c.x, c.y, c.z, c.w);
   std::println("Fifth test complete");
 
-  camera.attachSVO(&world);
+  camera.attachSparseVoxelDAG(&world);
 
   glm::vec2 lastMousePos;
 
@@ -212,8 +214,8 @@ int main() {
     if (camera.getPitch() < -89.0f)
       camera.setPitch(-89.0f);
 
-    std::println("Camera direction: {}, {}, {}", camera.getDirectionVector().x, camera.getDirectionVector().y, camera.getDirectionVector().z);
-    std::println("Camera position: {}, {}, {}", camera.mPos.x, camera.mPos.y, camera.mPos.z);
+    // std::println("Camera direction: {}, {}, {}", camera.getDirectionVector().x, camera.getDirectionVector().y, camera.getDirectionVector().z);
+    // std::println("Camera position: {}, {}, {}", camera.mPos.x, camera.mPos.y, camera.mPos.z);
   };
 
   float deltaTime, lastFrame, lastTimeFPSPrinted = 0.f;;
@@ -228,10 +230,12 @@ int main() {
 
     camera.render(window);
 
-    // Input
+    // Input - controls
     float cameraSpeed = 10.f * deltaTime;
     if (window.getKeyGLFW(GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
       cameraSpeed *= 10.f;
+    if (window.getKeyGLFW(GLFW_KEY_SPACE) == GLFW_PRESS)
+      camera.mPos.y += cameraSpeed;
     if (window.getKeyGLFW(GLFW_KEY_W) == GLFW_PRESS)
       camera.moveForward(cameraSpeed);
     if (window.getKeyGLFW(GLFW_KEY_S) == GLFW_PRESS)
