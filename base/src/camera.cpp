@@ -96,7 +96,7 @@ void RTVE::Camera::debugRender(Window& pWindow) {
   glm::mat4 projection = glm::perspective(glm::radians(45.0f), pWindow.getSize().x / pWindow.getSize().y, 0.1f, 10000.0f);
   glm::mat4 view = glm::lookAt(mPos, mPos + mFront, mUp);
   glm::mat4 model = glm::mat4(1.0f);
-  model = glm::scale(model, glm::vec3(mAttachedSVDAG->getSize() / 2, mAttachedSVDAG->getSize() / 2, mAttachedSVDAG->getSize()) / 2);
+  model = glm::scale(model, glm::vec3(mAttachedSVDAG->getSize() / 2.f, mAttachedSVDAG->getSize() / 2.f, mAttachedSVDAG->getSize()) / 2.f);
   mDebugShader.setMat4("uModel", model);
   mDebugShader.setMat4("uView", view);
   mDebugShader.setMat4("uProjection", projection);
