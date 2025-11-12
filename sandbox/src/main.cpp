@@ -1,6 +1,6 @@
 #include "RTVE.hpp"
 
-#define SVO_SIZE 128
+#define SVO_SIZE 16
 
 glm::vec3 aabbIntersection(glm::vec3 pOrigin, glm::vec3 pDirection, glm::vec3 pDirectionInv, float pMin, float pMax, glm::vec3& pNormal) {
   float tx1 = (pMin - pOrigin.x) * pDirectionInv.x;
@@ -122,6 +122,11 @@ uint traverse(RTVE::SparseVoxelDAG& pSVO, glm::vec3 pOrigin, glm::vec3 pDirectio
     currentNodeSize = currentNodeSize >> 1; // Divide current node size by 2
     glm::vec3 pos = pOrigin;
     pos -= nodeOrigin;
+    // pos.x = std::max(0.f, std::min(1.f, (float)(pos.x > currentNodeSize) + std::min(0.f, glm::sign(directionInv.x)) * (float)(pos.x == currentNodeSize) ));
+    // pos.y = std::max(0.f, std::min(1.f, (float)(pos.y > currentNodeSize) + std::min(0.f, glm::sign(directionInv.y)) * (float)(pos.y == currentNodeSize) ));
+    // pos.z = std::max(0.f, std::min(1.f, (float)(pos.z > currentNodeSize) + std::min(0.f, glm::sign(directionInv.z)) * (float)(pos.z == currentNodeSize) ));
+    // std::println("Pos: {}, {}, {}", pos.x, pos.y, pos.z);
+    // nodeOrigin += pos * (float)currentNodeSize;
     pos /= currentNodeSize;
     pos.x = std::max(0.0, std::min(1.0, floor(pos.x) + (std::min(0.f, glm::sign(directionInv.x)) * (floor(pos.x) == 1))));
     pos.y = std::max(0.0, std::min(1.0, floor(pos.y) + (std::min(0.f, glm::sign(directionInv.y)) * (floor(pos.y) == 1))));
@@ -156,11 +161,24 @@ int main() {
   // world.mData.push_back(RTVE::VoxelData());
   // world.mData.back().color = glm::vec4(1, 1, 1, 1);
 
-  world.mData.push_back({glm::vec4(0.1, 0.1, 0.1, 1)}); // Air - background color
-  world.insert(glm::vec3(0, 0, 0), {glm::vec4(1, 1, 1, 1)});
-  world.print();
-  world.insert(glm::vec3(10, 0, 0), {glm::vec4(10, 1, 1, 1)});
-  world.print();
+  world.mData.push_back({glm::vec4(0.1, 0.1, 0.1, 0)}); // Air - background color
+  // world.insert(glm::vec3(0, 0, 0), {glm::vec4(1, 1, 1, 1)});
+  // world.print();
+  // world.insert(glm::vec3(10, 0, 0), {glm::vec4(10, 1, 1, 1)});
+  // world.print();
+
+  for (int x = -SVO_SIZE; x < SVO_SIZE / 2.f; ++x) {
+    for (int y = -SVO_SIZE; y < SVO_SIZE / 2.f; ++y) {
+      for (int z = -SVO_SIZE; z < SVO_SIZE / 2.f; ++z) {
+        // if (std::sqrtf(x*x + z*z + y*y) < SVO_SIZE / 2.f)
+          // world.insert(glm::vec3(x + SVO_SIZE / 2.f, y + SVO_SIZE / 2.f, z + SVO_SIZE / 2.f), {glm::vec4(1, 1, 1, 0)});
+      }
+    }
+  }
+  world.insert(glm::vec3(0, 0, 0), {glm::vec4(1, 1, 1, 0)});
+  world.insert(glm::vec3(SVO_SIZE-1, SVO_SIZE-1, SVO_SIZE-1), {glm::vec4(1, 1, 1, 0)});
+  // world.print();
+  world.generateDebugMesh();
   
   camera.mPos = glm::vec3(0, 0, 0);
   camera.setDirection(0, 0);
@@ -229,6 +247,7 @@ int main() {
     window.clear();
 
     camera.render(window);
+    camera.debugRender(window);
 
     // Input - controls
     float cameraSpeed = 10.f * deltaTime;
@@ -255,5 +274,7 @@ int main() {
       frames = 0;
     }
   }
+
+  world.releaseDebugMesh();
 }
 

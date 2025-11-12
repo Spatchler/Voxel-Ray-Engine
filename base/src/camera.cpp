@@ -1,7 +1,7 @@
 #include "camera.hpp"
 
 RTVE::Camera::Camera()
-:mShader("base/shaders/rtvShader.vs", "base/shaders/rtvShader.fs"), mWorldUp(0, 1, 0), mPos(0, 0, 0) {
+:mDAGShader("base/shaders/rtvShader.vs", "base/shaders/rtvShader.fs"), mDebugShader("base/shaders/whiteShader.vs", "base/shaders/whiteShader.fs"), mWorldUp(0, 1, 0), mPos(0, 0, 0) {
   float vertices[] {
     -1.0f,  1.0f,
     -1.0f, -1.0f,
@@ -9,12 +9,12 @@ RTVE::Camera::Camera()
      1.0f, -1.0f
   };
 
-  glGenVertexArrays(1, &mVAO);
-  glGenBuffers(1, &mVBO);
+  glGenVertexArrays(1, &mScreenVAO);
+  glGenBuffers(1, &mScreenVBO);
   
-  glBindVertexArray(mVAO);
+  glBindVertexArray(mScreenVAO);
 
-  glBindBuffer(GL_ARRAY_BUFFER, mVBO);
+  glBindBuffer(GL_ARRAY_BUFFER, mScreenVBO);
   glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
   glEnableVertexAttribArray(0);
@@ -64,14 +64,14 @@ void RTVE::Camera::moveRight(float pSpeed) {
 }
 
 void RTVE::Camera::render(Window& pWindow) {
-  mShader.use();
-  mShader.setVec3("uCamPos", mPos);
-  mShader.setInt("uSVOSize", mAttachedSVDAG->getSize());
+  mDAGShader.use();
+  mDAGShader.setVec3("uCamPos", mPos);
+  mDAGShader.setInt("uSVOSize", mAttachedSVDAG->getSize());
   glm::mat4 projection = glm::perspective(glm::radians(45.0f), pWindow.getSize().x / pWindow.getSize().y, 0.1f, 10000.0f);
   glm::mat4 view = glm::lookAt(mPos, mPos + mFront, mUp);
-  mShader.setMat4("uProjViewInv", glm::inverse(projection * view));
-  mShader.setInt("uMidpoint", mAttachedSVDAG->getMidpoint());
-  mShader.setVec2("uHalfResolutionInv", 2.f / pWindow.getSize());
+  mDAGShader.setMat4("uProjViewInv", glm::inverse(projection * view));
+  mDAGShader.setInt("uMidpoint", mAttachedSVDAG->getMidpoint());
+  mDAGShader.setVec2("uHalfResolutionInv", 2.f / pWindow.getSize());
 
   // Bind SSBO
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, mSVDAGindicesSSBO);
@@ -81,7 +81,7 @@ void RTVE::Camera::render(Window& pWindow) {
   glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, mSVDAGdataSSBO);
 
   // Render
-  glBindVertexArray(mVAO);
+  glBindVertexArray(mScreenVAO);
   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
   glBindVertexArray(0);
 
@@ -91,13 +91,26 @@ void RTVE::Camera::render(Window& pWindow) {
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 }
 
+void RTVE::Camera::debugRender(Window& pWindow) {
+  mDebugShader.use();
+  glm::mat4 projection = glm::perspective(glm::radians(45.0f), pWindow.getSize().x / pWindow.getSize().y, 0.1f, 10000.0f);
+  glm::mat4 view = glm::lookAt(mPos, mPos + mFront, mUp);
+  glm::mat4 model = glm::mat4(1.0f);
+  model = glm::scale(model, glm::vec3(mAttachedSVDAG->getSize() / 2, mAttachedSVDAG->getSize() / 2, mAttachedSVDAG->getSize()) / 2);
+  mDebugShader.setMat4("uModel", model);
+  mDebugShader.setMat4("uView", view);
+  mDebugShader.setMat4("uProjection", projection);
+
+  mAttachedSVDAG->drawDebug();
+}
+
 void RTVE::Camera::attachSparseVoxelDAG(SparseVoxelDAG* pSVDAG) {
   mAttachedSVDAG = pSVDAG;
 
   // Indices buffer --------------------------------------
-  mShader.use();
+  mDAGShader.use();
   // Bind buffer
-  glBindAttribLocation(mShader.getID(), 0, "SVDAGindices");
+  glBindAttribLocation(mDAGShader.getID(), 0, "SVDAGindices");
   glGenBuffers(1, &mSVDAGindicesSSBO);
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, mSVDAGindicesSSBO);
   glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, mSVDAGindicesSSBO);
@@ -108,9 +121,9 @@ void RTVE::Camera::attachSparseVoxelDAG(SparseVoxelDAG* pSVDAG) {
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 
   // Data buffer -----------------------------------------
-  mShader.use();
+  mDAGShader.use();
   // Bind buffer
-  glBindAttribLocation(mShader.getID(), 1, "SVDAGdata");
+  glBindAttribLocation(mDAGShader.getID(), 1, "SVDAGdata");
   glGenBuffers(1, &mSVDAGdataSSBO);
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, mSVDAGdataSSBO);
   glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, mSVDAGdataSSBO);
@@ -119,6 +132,11 @@ void RTVE::Camera::attachSparseVoxelDAG(SparseVoxelDAG* pSVDAG) {
   // Unbind buffer
   glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, mSVDAGdataSSBO);
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+}
+
+RTVE::Camera::~Camera() {
+  glDeleteVertexArrays(1, &mScreenVAO);
+  glDeleteBuffers(1, &mScreenVBO);
 }
 
 void RTVE::Camera::updateVectors() {

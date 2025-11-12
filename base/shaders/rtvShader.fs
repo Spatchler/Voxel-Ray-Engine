@@ -166,6 +166,10 @@ uint traverse(vec3 pOrigin, vec3 pDirection, vec3 pDirectionInv, inout ivec3 pNo
     currentNodeSize = currentNodeSize >> 1; // Divide current node size by 2
     vec3 pos = pOrigin;
     pos -= nodeOrigin;
+    // pos.x = min(1.f, float(pos.x > currentNodeSize) + min(0.f, sign(pDirectionInv.x)) * float(pos.x == currentNodeSize) );
+    // pos.y = min(1.f, float(pos.y > currentNodeSize) + min(0.f, sign(pDirectionInv.y)) * float(pos.y == currentNodeSize) );
+    // pos.z = min(1.f, float(pos.z > currentNodeSize) + min(0.f, sign(pDirectionInv.z)) * float(pos.z == currentNodeSize) );
+    // nodeOrigin += pos * currentNodeSize;
     pos /= currentNodeSize;
     pos.x = max(0.0, min(1.0, floor(pos.x) + (min(0.f, sign(pDirectionInv.x)) * float(pos.x == 1))));
     pos.y = max(0.0, min(1.0, floor(pos.y) + (min(0.f, sign(pDirectionInv.y)) * float(pos.y == 1))));

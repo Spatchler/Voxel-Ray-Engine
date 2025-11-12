@@ -22,8 +22,11 @@ namespace RTVE {
     void moveRight(float pSpeed);
 
     void render(Window& pWindow);
+    void debugRender(Window& pWindow);
 
     void attachSparseVoxelDAG(SparseVoxelDAG* pSVDAG);
+
+    ~Camera();
     
     glm::vec3 mPos;
   private:
@@ -33,8 +36,8 @@ namespace RTVE {
 
     SparseVoxelDAG* mAttachedSVDAG;
     
-    Shader mShader;
-    uint mVAO, mVBO;
+    Shader mDAGShader, mDebugShader;
+    uint mScreenVAO, mScreenVBO;
     uint mSVDAGindicesSSBO, mSVDAGdataSSBO;
   };
 }
