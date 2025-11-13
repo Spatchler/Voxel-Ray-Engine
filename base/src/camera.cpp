@@ -1,7 +1,7 @@
 #include "camera.hpp"
 
 RTVE::Camera::Camera()
-:mDAGShader("base/shaders/rtvShader.vs", "base/shaders/rtvShader.fs"), mDebugShader("base/shaders/whiteShader.vs", "base/shaders/whiteShader.fs"), mWorldUp(0, 1, 0), mPos(0, 0, 0) {
+:mDAGShader("base/shaders/rtvShader.vs", "base/shaders/rtvShader.fs"), mDebugShader("base/shaders/debugShader.vs", "base/shaders/debugShader.fs"), mWorldUp(0, 1, 0), mPos(0, 0, 0) {
   float vertices[] {
     -1.0f,  1.0f,
     -1.0f, -1.0f,
@@ -67,9 +67,14 @@ void RTVE::Camera::render(Window& pWindow) {
   mDAGShader.use();
   mDAGShader.setVec3("uCamPos", mPos);
   mDAGShader.setInt("uSVOSize", mAttachedSVDAG->getSize());
-  glm::mat4 projection = glm::perspective(glm::radians(45.0f), pWindow.getSize().x / pWindow.getSize().y, 0.1f, 10000.0f);
+  float near = 0.1f;
+  float far = 10000.f;
+  glm::mat4 projection = glm::perspective(glm::radians(45.0f), pWindow.getSize().x / pWindow.getSize().y, near, far);
   glm::mat4 view = glm::lookAt(mPos, mPos + mFront, mUp);
   mDAGShader.setMat4("uProjViewInv", glm::inverse(projection * view));
+  mDAGShader.setFloat("uInverseNear", 1.f/near);
+  mDAGShader.setFloat("uInverseFar", 1.f/far);
+  mDAGShader.setFloat("uFar", far);
   mDAGShader.setInt("uMidpoint", mAttachedSVDAG->getMidpoint());
   mDAGShader.setVec2("uHalfResolutionInv", 2.f / pWindow.getSize());
 
@@ -96,8 +101,7 @@ void RTVE::Camera::debugRender(Window& pWindow) {
   glm::mat4 projection = glm::perspective(glm::radians(45.0f), pWindow.getSize().x / pWindow.getSize().y, 0.1f, 10000.0f);
   glm::mat4 view = glm::lookAt(mPos, mPos + mFront, mUp);
   glm::mat4 model = glm::mat4(1.0f);
-  model = glm::translate(model, glm::vec3(mAttachedSVDAG->getSize() / 2.f, mAttachedSVDAG->getSize() / 2.f, mAttachedSVDAG->getSize() / 2.f));
-  model = glm::scale(model, glm::vec3(mAttachedSVDAG->getSize() / 2.f, mAttachedSVDAG->getSize() / 2.f, mAttachedSVDAG->getSize() / 2.f));
+  model = glm::scale(model, glm::vec3(mAttachedSVDAG->getSize(), mAttachedSVDAG->getSize(), mAttachedSVDAG->getSize()));
   mDebugShader.setMat4("uModel", model);
   mDebugShader.setMat4("uView", view);
   mDebugShader.setMat4("uProjection", projection);

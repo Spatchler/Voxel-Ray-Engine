@@ -16,19 +16,24 @@ layout (std430, binding = 1) readonly buffer SVDAGdata {
 uniform int uMidpoint;
 uniform vec3 uCamPos;
 uniform mat4 uProjViewInv;
+uniform float uInverseNear;
+uniform float uInverseFar;
+uniform float uFar;
 uniform int uSVOSize;
 uniform vec2 uHalfResolutionInv;
 
 vec3 getDirection();
 uint toChildIndex(vec3 pPos);
-vec3 advanceRay(vec3 pOrigin, vec3 pDirection, vec3 pDirectionInv, vec3 pNodeOrigin, uint pNodeSize, inout ivec3 pNormal);
-uint traverse(vec3 pOrigin, vec3 pDirection, vec3 pDirectionInv, inout ivec3 pNormal);
+vec3 advanceRay(vec3 pOrigin, vec3 pDirection, vec3 pDirectionInv, vec3 pNodeOrigin, uint pNodeSize, inout ivec3 pNormal, inout float pDepth);
+uint traverse(vec3 pOrigin, vec3 pDirection, vec3 pDirectionInv, inout ivec3 pNormal, inout float pDepth);
 
 void main() {
   vec3 direction = normalize(getDirection());
   vec3 directionInv = 1/direction;
   ivec3 normal = {0, 0, 0};
-  uint index = traverse(uCamPos, direction, directionInv, normal);
+  float depth = 0;
+  uint index = traverse(uCamPos, direction, directionInv, normal, depth);
+  gl_FragDepth = ((1/depth) - uInverseNear) / (uInverseFar - uInverseNear);
   VoxelData v = data[index];
   if (index == 0) {
     fragColor = v.color;
@@ -39,6 +44,7 @@ void main() {
   v.color.r = max(0, v.color.r * brightness);
   v.color.g = max(0, v.color.g * brightness);
   v.color.b = max(0, v.color.b * brightness);
+  v.color.a = depth;
   fragColor = v.color;
 }
 
@@ -57,7 +63,7 @@ uint toChildIndex(vec3 pPos) {
   return (localChildPos.x << 0) | (localChildPos.y << 1) | (localChildPos.z << 2); // Index in childIndices 0 - 7
 }
 
-vec3 advanceRay(vec3 pOrigin, vec3 pDirection, vec3 pDirectionInv, vec3 pNodeOrigin, uint pNodeSize, inout ivec3 pNormal) {
+vec3 advanceRay(vec3 pOrigin, vec3 pDirection, vec3 pDirectionInv, vec3 pNodeOrigin, uint pNodeSize, inout ivec3 pNormal, inout float pDepth) {
   float planeX = pNodeOrigin.x + pNodeSize*max(0.f, sign(pDirectionInv.x));
   float tx = (planeX - pOrigin.x) * pDirectionInv.x;
 
@@ -79,10 +85,12 @@ vec3 advanceRay(vec3 pOrigin, vec3 pDirection, vec3 pDirectionInv, vec3 pNodeOri
   pNormal.y = int(sign(pDirectionInv.y)) * -int(pos.y == planeY);
   pNormal.z = int(sign(pDirectionInv.z)) * -int(pos.z == planeZ);
 
+  pDepth += tmin;
+
   return pos;
 }
 
-vec3 aabbIntersection(vec3 pOrigin, vec3 pDirection, vec3 pDirectionInv, float pMin, float pMax, inout ivec3 pNormal) {
+vec3 aabbIntersection(vec3 pOrigin, vec3 pDirection, vec3 pDirectionInv, float pMin, float pMax, inout ivec3 pNormal, inout float pDepth) {
   float tx1 = (pMin - pOrigin.x) * pDirectionInv.x;
   float tx2 = (pMax - pOrigin.x) * pDirectionInv.x;
 
@@ -117,16 +125,20 @@ vec3 aabbIntersection(vec3 pOrigin, vec3 pDirection, vec3 pDirectionInv, float p
     pNormal.y = -int(pos.y == 0.f);
     pNormal.z = -int(pos.z == 0.f);
 
+    pDepth = tmin;
+
     return pos;
   }
-  else
+  else {
+    pDepth = uFar;
     return vec3(-1, -1, -1);
+  }
 }
 
-uint traverse(vec3 pOrigin, vec3 pDirection, vec3 pDirectionInv, inout ivec3 pNormal) {
+uint traverse(vec3 pOrigin, vec3 pDirection, vec3 pDirectionInv, inout ivec3 pNormal, inout float pDepth) {
   if (pOrigin.x > uSVOSize || pOrigin.x < 0 || pOrigin.y > uSVOSize || pOrigin.y < 0 || pOrigin.z > uSVOSize || pOrigin.z < 0) {
     // Ray origin not inside the SVO, carry out aabb intersection
-    pOrigin = aabbIntersection(pOrigin, pDirection, pDirectionInv, 0, uSVOSize, pNormal);
+    pOrigin = aabbIntersection(pOrigin, pDirection, pDirectionInv, 0, uSVOSize, pNormal, pDepth);
     if (pOrigin.x < 0) // pOrigin == vec3(-1, -1, -1)
       return 0;
     if ((pOrigin.x == 0 && pDirection.x < 0) ||
@@ -148,14 +160,16 @@ uint traverse(vec3 pOrigin, vec3 pDirection, vec3 pDirectionInv, inout ivec3 pNo
 
     // Advance ray if voxel is air
     if (nodeIndex == uMidpoint) {
-      pOrigin = advanceRay(pOrigin, pDirection, pDirectionInv, nodeOrigin, currentNodeSize, pNormal);
+      pOrigin = advanceRay(pOrigin, pDirection, pDirectionInv, nodeOrigin, currentNodeSize, pNormal, pDepth);
       if ((pOrigin.x <= 0 && pDirection.x < 0) ||
           (pOrigin.x >= uSVOSize && pDirection.x > 0) ||
           (pOrigin.y <= 0 && pDirection.y < 0) ||
           (pOrigin.y >= uSVOSize && pDirection.y > 0) ||
           (pOrigin.z <= 0 && pDirection.z < 0) ||
-          (pOrigin.z >= uSVOSize && pDirection.z > 0))
+          (pOrigin.z >= uSVOSize && pDirection.z > 0)) {
+        pDepth = uFar;
         return 0; // If ray has gone outside the tree return 0
+      }
       nodeIndex = 0; // Go back to the top of the tree
       nodeOrigin = vec3(0, 0, 0);
       currentNodeSize = uSVOSize;

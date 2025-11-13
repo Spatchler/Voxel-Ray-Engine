@@ -44,9 +44,9 @@ void RTVE::Window::init(const char* pTitle) {
     std::println("Failed to initialize GLAD");
 
   glEnable(GL_DEPTH_TEST);
-  glDepthFunc(GL_ALWAYS);
+  glDepthFunc(GL_LESS);
 
-  glLineWidth(2);
+  glLineWidth(1);
 }
 
 RTVE::Window::~Window() {

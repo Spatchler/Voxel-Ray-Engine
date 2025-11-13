@@ -41,7 +41,7 @@ void RTVE::SparseVoxelDAG::print() {
 void RTVE::SparseVoxelDAG::drawDebug() {
   glBindVertexArray(mDebugVAO);
   // glDrawElements(GL_LINE_STRIP, count, GL_UNSIGNED_INT, 0);
-  glDrawArrays(GL_LINE_STRIP, 0, 36);
+  glDrawArrays(GL_LINES, 0, mDebugVertexCount);
   glBindVertexArray(0);
 }
 
@@ -54,55 +54,23 @@ uint RTVE::SparseVoxelDAG::toChildIndex(glm::vec3 pPos) {
   return (localChildPos.x << 0) | (localChildPos.y << 1) | (localChildPos.z << 2); // Index in childIndices 0 - 7
 }
 
+glm::vec3 RTVE::SparseVoxelDAG::toPos(uint pChildIndex) {
+  glm::vec3 pos;
+  pos.x = 1 & pChildIndex;
+  pos.y = ((1 << 1) & pChildIndex) != 0;
+  pos.z = ((1 << 2) & pChildIndex) != 0;
+  return pos;
+}
+
 void RTVE::SparseVoxelDAG::generateDebugMesh() {
   // Generate mesh
-  // std::vector<glm::vec3> vertcies;
+  std::vector<glm::vec3> vertices;
   // std::vector<uint> indices;
 
-  float vertices[] = {
-    // back face
-    -1.0f, -1.0f, -1.0f,
-     1.0f,  1.0f, -1.0f,
-     1.0f, -1.0f, -1.0f,
-     1.0f,  1.0f, -1.0f,
-    -1.0f, -1.0f, -1.0f,
-    -1.0f,  1.0f, -1.0f,
-    // front face
-    -1.0f, -1.0f,  1.0f,
-     1.0f, -1.0f,  1.0f,
-     1.0f,  1.0f,  1.0f,
-     1.0f,  1.0f,  1.0f,
-    -1.0f,  1.0f,  1.0f,
-    -1.0f, -1.0f,  1.0f,
-    // left face
-    -1.0f,  1.0f,  1.0f,
-    -1.0f,  1.0f, -1.0f,
-    -1.0f, -1.0f, -1.0f,
-    -1.0f, -1.0f, -1.0f,
-    -1.0f, -1.0f,  1.0f,
-    -1.0f,  1.0f,  1.0f,
-    // right face
-     1.0f,  1.0f,  1.0f,
-     1.0f, -1.0f, -1.0f,
-     1.0f,  1.0f, -1.0f,
-     1.0f, -1.0f, -1.0f,
-     1.0f,  1.0f,  1.0f,
-     1.0f, -1.0f,  1.0f,
-    // bottom face
-    -1.0f, -1.0f, -1.0f,
-     1.0f, -1.0f, -1.0f,
-     1.0f, -1.0f,  1.0f,
-     1.0f, -1.0f,  1.0f,
-    -1.0f, -1.0f,  1.0f,
-    -1.0f, -1.0f, -1.0f,
-    // top face
-    -1.0f,  1.0f, -1.0f,
-     1.0f,  1.0f , 1.0f,
-     1.0f,  1.0f, -1.0f,
-     1.0f,  1.0f,  1.0f,
-    -1.0f,  1.0f, -1.0f,
-    -1.0f,  1.0f,  1.0f
-  };
+  insertCubeVerticesImpl(vertices, mSize, glm::vec3(0, 0, 0), 0);
+
+  mDebugVertexCount = vertices.size();
+  std::println("Count: {}", mDebugVertexCount);
   
   glGenVertexArrays(1, &mDebugVAO);
   glGenBuffers(1, &mDebugVBO);
@@ -111,7 +79,7 @@ void RTVE::SparseVoxelDAG::generateDebugMesh() {
   glBindVertexArray(mDebugVAO);
 
   glBindBuffer(GL_ARRAY_BUFFER, mDebugVBO);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+  glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(glm::vec3), &vertices[0], GL_STATIC_DRAW);
 
   glEnableVertexAttribArray(0);
   glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
@@ -155,5 +123,61 @@ void RTVE::SparseVoxelDAG::insertImpl(const glm::vec3& pPoint, const uint& pData
   }
 
   insertImpl(pPoint, pDataIndex, pNodeIndex, pNodeSize, pNodeOrigin);
+}
+
+void RTVE::SparseVoxelDAG::insertCubeVerticesImpl(std::vector<glm::vec3>& pVertices, uint pNodeSize, glm::vec3 pNodeOrigin, uint pNodeIndex) {
+  insertCubeVertices(pVertices, pNodeOrigin, pNodeSize);
+  if (pNodeIndex == mMidpoint) {
+    return;
+  }
+  for (uint i = 0; i < 8; ++i) {
+    uint index = mIndices[pNodeIndex][i];
+    if (index <= mMidpoint)
+      insertCubeVerticesImpl(pVertices, pNodeSize >> 1, pNodeOrigin + toPos(i) * (float)(pNodeSize >> 1), index);
+  }
+}
+
+void RTVE::SparseVoxelDAG::insertCubeVertices(std::vector<glm::vec3>& pVertices, glm::vec3 pPos, float pScale) const {
+  float vertices[] = {
+    0.f, 0.f, 0.f,
+    1.f, 0.f, 0.f,
+
+    1.f, 0.f, 0.f,
+    1.f, 1.f, 0.f,
+
+    1.f, 1.f, 0.f,
+    0.f, 1.f, 0.f,
+
+    0.f, 1.f, 0.f,
+    0.f, 0.f, 0.f,
+
+    0.f, 0.f, 0.f,
+    0.f, 0.f, 1.f,
+
+    0.f, 1.f, 0.f,
+    0.f, 1.f, 1.f,
+
+    1.f, 1.f, 0.f,
+    1.f, 1.f, 1.f,
+
+    1.f, 0.f, 0.f,
+    1.f, 0.f, 1.f,
+
+    0.f, 0.f, 1.f,
+    0.f, 1.f, 1.f,
+
+    0.f, 1.f, 1.f,
+    1.f, 1.f, 1.f,
+
+    1.f, 1.f, 1.f,
+    1.f, 0.f, 1.f,
+
+    1.f, 0.f, 1.f,
+    0.f, 0.f, 1.f
+  };
+
+  for (uint i = 0; i < sizeof(vertices) / (3*sizeof(float)); ++i) {
+    pVertices.push_back(glm::vec3(vertices[i*3], vertices[i*3+1], vertices[i*3+2]) * (pScale / mSize) + (pPos / (float)mSize));
+  }
 }
 

@@ -33,6 +33,7 @@ namespace RTVE {
     void drawDebug();
 
     static uint toChildIndex(glm::vec3 pPos);
+    static glm::vec3 toPos(uint pChildIndex);
 
     void generateDebugMesh();
     void releaseDebugMesh();
@@ -41,6 +42,12 @@ namespace RTVE {
     std::vector<VoxelData> mData;
   private:
     void insertImpl(const glm::vec3& pPoint, const uint& pData, uint pNodeIndex, uint pNodeSize, glm::vec3 pNodeOrigin);
+
+    void insertCubeVerticesImpl(std::vector<glm::vec3>& pVertices, uint pNodeSize, glm::vec3 pNodeOrigin, uint pNodeIndex);
+
+    void insertCubeVertices(std::vector<glm::vec3>& pVertices, glm::vec3 pPos, float pScale) const;
+
+    uint mDebugVertexCount;
 
     uint mDebugVAO, mDebugVBO, mDebugEBO;
     uint mSize, mMaxDepth, mMidpoint;
