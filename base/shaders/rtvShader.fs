@@ -17,7 +17,7 @@ uniform int uMidpoint;
 uniform vec3 uCamPos;
 uniform mat4 uProjViewInv;
 uniform float uInverseNear;
-uniform float uInverseFar;
+uniform float uInverseFrustumDepth;
 uniform float uFar;
 uniform int uSVOSize;
 uniform vec2 uHalfResolutionInv;
@@ -33,7 +33,7 @@ void main() {
   ivec3 normal = {0, 0, 0};
   float depth = 0;
   uint index = traverse(uCamPos, direction, directionInv, normal, depth);
-  gl_FragDepth = ((1/depth) - uInverseNear) / (uInverseFar - uInverseNear);
+  gl_FragDepth = ((1/depth) - uInverseNear) * uInverseFrustumDepth;
   VoxelData v = data[index];
   if (index == 0) {
     fragColor = v.color;
@@ -121,9 +121,12 @@ vec3 aabbIntersection(vec3 pOrigin, vec3 pDirection, vec3 pDirectionInv, float p
     pos.y = max(0.f, min(uSVOSize, pos.y));
     pos.z = max(0.f, min(uSVOSize, pos.z));
 
-    pNormal.x = -int(pos.x == 0.f);
-    pNormal.y = -int(pos.y == 0.f);
-    pNormal.z = -int(pos.z == 0.f);
+    pNormal.x = -int(tmin == tx1) + int(tmin == tx2);
+    pNormal.y = -int(tmin == ty1) + int(tmin == ty2);
+    pNormal.z = -int(tmin == tz1) + int(tmin == tz2);
+    // pNormal.x = int(sign(pDirectionInv.x)) * -int(pos.x == 0.f);
+    // pNormal.y = int(sign(pDirectionInv.y)) * -int(pos.y == 0.f);
+    // pNormal.z = int(sign(pDirectionInv.z)) * -int(pos.z == 0.f);
 
     pDepth = tmin;
 

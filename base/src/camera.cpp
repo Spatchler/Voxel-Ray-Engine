@@ -73,7 +73,7 @@ void RTVE::Camera::render(Window& pWindow) {
   glm::mat4 view = glm::lookAt(mPos, mPos + mFront, mUp);
   mDAGShader.setMat4("uProjViewInv", glm::inverse(projection * view));
   mDAGShader.setFloat("uInverseNear", 1.f/near);
-  mDAGShader.setFloat("uInverseFar", 1.f/far);
+  mDAGShader.setFloat("uInverseFrustumDepth", 1.f/(1.f/far - 1.f/near));
   mDAGShader.setFloat("uFar", far);
   mDAGShader.setInt("uMidpoint", mAttachedSVDAG->getMidpoint());
   mDAGShader.setVec2("uHalfResolutionInv", 2.f / pWindow.getSize());

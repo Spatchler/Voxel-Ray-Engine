@@ -1,6 +1,6 @@
 #include "RTVE.hpp"
 
-#define SVO_SIZE 16
+#define SVO_SIZE 64
 
 int main() {
   RTVE::Window& window = RTVE::Window::get();
@@ -11,33 +11,18 @@ int main() {
 
   RTVE::SparseVoxelDAG world(SVO_SIZE);
 
-  // world.mIndices.push_back({1, 1, 1, 1, 1, 1, 1, 1});
-  // world.mIndices.push_back({2, 2, 2, 2, 2, 2, 2, 2});
-  // world.mIndices.push_back({3, 3, 3, 3, 3, 3, 3, 3});
-  // world.mIndices.push_back({4, 4, 4, 4, 4, 4, 4, 4});
-  // world.mIndices.push_back({5, 5, 5, 5, 5, 5, 5, 5});
-  // world.mIndices.push_back({6, 6, 6, 6, 6, 6, 6, 6});
-  // world.mIndices.push_back({7, 7, 7, 7, 7, 7, 7, 7});
-  // world.mIndices.push_back({8, 8, 8, 8, 8, 8, 8, 8});
-  // world.mIndices.push_back({9, 9, 9, 9, 9, 9, 9, 9});
-  // world.mIndices.push_back({10, 11, 11, 11, 10, 11, 10, 10});
-  // world.mData.push_back(RTVE::VoxelData());
-  // world.mData.back().color = glm::vec4(0.1, 0.1, 0.1, 1); // Air - background color
-  // world.mData.push_back(RTVE::VoxelData());
-  // world.mData.back().color = glm::vec4(1, 1, 1, 1);
-
-  world.mData.push_back({glm::vec4(0.1, 0.1, 0.1, 0)}); // Air - background color
+  world.mData.push_back({glm::vec4(0.1, 0.1, 0.1, 1)}); // Air - background color
 
   for (int x = -SVO_SIZE; x < SVO_SIZE / 2.f; ++x) {
     for (int y = -SVO_SIZE; y < SVO_SIZE / 2.f; ++y) {
       for (int z = -SVO_SIZE; z < SVO_SIZE / 2.f; ++z) {
-        if (std::sqrtf(x*x + z*z + y*y) < SVO_SIZE / 4.f)
+        if (std::sqrtf(x*x + z*z + y*y) < SVO_SIZE / 2.f)
           world.insert(glm::vec3(x + SVO_SIZE / 2.f, y + SVO_SIZE / 2.f, z + SVO_SIZE / 2.f), {glm::vec4(1, 1, 1, 0)});
       }
     }
   }
-  world.insert(glm::vec3(0, 0, 0), {glm::vec4(1, 1, 1, 0)});
-  world.insert(glm::vec3(SVO_SIZE-1, SVO_SIZE-1, SVO_SIZE-1), {glm::vec4(1, 1, 1, 0)});
+  // world.insert(glm::vec3(0, 0, 0), {glm::vec4(1, 1, 1, 0)});
+  // world.insert(glm::vec3(SVO_SIZE-1, SVO_SIZE-1, SVO_SIZE-1), {glm::vec4(1, 1, 1, 0)});
   world.generateDebugMesh();
   
   camera.mPos = glm::vec3(0, 0, 0);
@@ -66,7 +51,8 @@ int main() {
 
   float deltaTime, lastFrame, lastTimeFPSPrinted = 0.f;;
   uint frames = 0;
-  bool debugRendering, fLastPressed = false;
+  bool debugRendering = false;
+  bool fLastPressed = false;
   while (!window.shouldWindowClose()) {
     float currentFrame = window.getTime();
     deltaTime = currentFrame - lastFrame;
