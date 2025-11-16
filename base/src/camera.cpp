@@ -21,6 +21,9 @@ RTVE::Camera::Camera()
   glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 2, (void*)0);
 
   glBindVertexArray(0);
+
+  mInverseNear = 1.f/mNear;
+  mInverseFrustumDepth = 1.f/(1.f/mFar - mInverseNear);
 }
 
 void RTVE::Camera::setDirection(float pYaw, float pPitch) {
@@ -63,20 +66,22 @@ void RTVE::Camera::moveRight(float pSpeed) {
   mPos += glm::normalize(glm::cross(mFront, mUp)) * pSpeed;
 }
 
-void RTVE::Camera::render(Window& pWindow) {
+void RTVE::Camera::updateViewportSize(const glm::vec2& pSize) {
+  mProjection = glm::perspective(glm::radians(45.0f), pSize.x / pSize.y, mNear, mFar);
+  mHalfResolutionInv = 2.f / pSize;
+}
+
+void RTVE::Camera::render() {
   mDAGShader.use();
   mDAGShader.setVec3("uCamPos", mPos);
-  mDAGShader.setInt("uSVOSize", mAttachedSVDAG->getSize());
-  float near = 0.1f;
-  float far = 10000.f;
-  glm::mat4 projection = glm::perspective(glm::radians(45.0f), pWindow.getSize().x / pWindow.getSize().y, near, far);
+  mDAGShader.setInt("uSVDAGSize", mAttachedSVDAG->getSize());
   glm::mat4 view = glm::lookAt(mPos, mPos + mFront, mUp);
-  mDAGShader.setMat4("uProjViewInv", glm::inverse(projection * view));
-  mDAGShader.setFloat("uInverseNear", 1.f/near);
-  mDAGShader.setFloat("uInverseFrustumDepth", 1.f/(1.f/far - 1.f/near));
-  mDAGShader.setFloat("uFar", far);
+  mDAGShader.setMat4("uProjViewInv", glm::inverse(mProjection * view));
+  mDAGShader.setFloat("uInverseNear", mInverseNear);
+  mDAGShader.setFloat("uInverseFrustumDepth", mInverseFrustumDepth);
+  mDAGShader.setFloat("uFar", mFar);
   mDAGShader.setInt("uMidpoint", mAttachedSVDAG->getMidpoint());
-  mDAGShader.setVec2("uHalfResolutionInv", 2.f / pWindow.getSize());
+  mDAGShader.setVec2("uHalfResolutionInv", mHalfResolutionInv);
 
   // Bind SSBO
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, mSVDAGindicesSSBO);

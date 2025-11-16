@@ -19,20 +19,21 @@ uniform mat4 uProjViewInv;
 uniform float uInverseNear;
 uniform float uInverseFrustumDepth;
 uniform float uFar;
-uniform int uSVOSize;
+uniform int uSVDAGSize;
 uniform vec2 uHalfResolutionInv;
 
 vec3 getDirection();
 uint toChildIndex(vec3 pPos);
 vec3 advanceRay(vec3 pOrigin, vec3 pDirection, vec3 pDirectionInv, vec3 pNodeOrigin, uint pNodeSize, inout ivec3 pNormal, inout float pDepth);
-uint traverse(vec3 pOrigin, vec3 pDirection, vec3 pDirectionInv, inout ivec3 pNormal, inout float pDepth);
+uint traverse(vec3 pOrigin, vec3 pDirection, vec3 pDirectionInv, inout ivec3 pNormal, inout float pDepth, inout float pAdvanceCount);
 
 void main() {
   vec3 direction = normalize(getDirection());
   vec3 directionInv = 1/direction;
   ivec3 normal = {0, 0, 0};
   float depth = 0;
-  uint index = traverse(uCamPos, direction, directionInv, normal, depth);
+  float advanceCount = 0;
+  uint index = traverse(uCamPos, direction, directionInv, normal, depth, advanceCount);
   gl_FragDepth = ((1/depth) - uInverseNear) * uInverseFrustumDepth;
   VoxelData v = data[index];
   if (index == 0) {
@@ -41,9 +42,22 @@ void main() {
   }
   vec3 light = {0.5, 0.1, 0.76};
   float brightness = (dot(light, normal) + 1) / 2;
-  v.color.r = max(0, v.color.r * brightness);
-  v.color.g = max(0, v.color.g * brightness);
-  v.color.b = max(0, v.color.b * brightness);
+
+  // Lit
+  // v.color.r = max(0, v.color.r * brightness);
+  // v.color.g = max(0, v.color.g * brightness);
+  // v.color.b = max(0, v.color.b * brightness);
+  
+  // Normals
+  // v.color.r = (normal.x + 1) / 2;
+  // v.color.g = (normal.y + 1) / 2;
+  // v.color.b = (normal.z + 1) / 2;
+
+  // Advance count
+  v.color.r = advanceCount / 100.f;
+  v.color.g = 0;
+  v.color.b = 0;
+
   v.color.a = depth;
   fragColor = v.color;
 }
@@ -117,9 +131,9 @@ vec3 aabbIntersection(vec3 pOrigin, vec3 pDirection, vec3 pDirectionInv, float p
     pos.y = max((pDirection.y * tmin + pOrigin.y) * float(tmin != ty1 && tmin != ty2), max(pMin * float(tmin == ty1), pMax * float(tmin == ty2)));
     pos.z = max((pDirection.z * tmin + pOrigin.z) * float(tmin != tz1 && tmin != tz2), max(pMin * float(tmin == tz1), pMax * float(tmin == tz2)));
 
-    pos.x = max(0.f, min(uSVOSize, pos.x));
-    pos.y = max(0.f, min(uSVOSize, pos.y));
-    pos.z = max(0.f, min(uSVOSize, pos.z));
+    pos.x = max(0.f, min(uSVDAGSize, pos.x));
+    pos.y = max(0.f, min(uSVDAGSize, pos.y));
+    pos.z = max(0.f, min(uSVDAGSize, pos.z));
 
     pNormal.x = -int(tmin == tx1) + int(tmin == tx2);
     pNormal.y = -int(tmin == ty1) + int(tmin == ty2);
@@ -138,24 +152,24 @@ vec3 aabbIntersection(vec3 pOrigin, vec3 pDirection, vec3 pDirectionInv, float p
   }
 }
 
-uint traverse(vec3 pOrigin, vec3 pDirection, vec3 pDirectionInv, inout ivec3 pNormal, inout float pDepth) {
-  if (pOrigin.x > uSVOSize || pOrigin.x < 0 || pOrigin.y > uSVOSize || pOrigin.y < 0 || pOrigin.z > uSVOSize || pOrigin.z < 0) {
+uint traverse(vec3 pOrigin, vec3 pDirection, vec3 pDirectionInv, inout ivec3 pNormal, inout float pDepth, inout float pAdvanceCount) {
+  if (pOrigin.x > uSVDAGSize || pOrigin.x < 0 || pOrigin.y > uSVDAGSize || pOrigin.y < 0 || pOrigin.z > uSVDAGSize || pOrigin.z < 0) {
     // Ray origin not inside the SVO, carry out aabb intersection
-    pOrigin = aabbIntersection(pOrigin, pDirection, pDirectionInv, 0, uSVOSize, pNormal, pDepth);
+    pOrigin = aabbIntersection(pOrigin, pDirection, pDirectionInv, 0, uSVDAGSize, pNormal, pDepth);
     if (pOrigin.x < 0) // pOrigin == vec3(-1, -1, -1)
       return 0;
     if ((pOrigin.x == 0 && pDirection.x < 0) ||
-        (pOrigin.x == uSVOSize && pDirection.x > 0) ||
+        (pOrigin.x == uSVDAGSize && pDirection.x > 0) ||
         (pOrigin.y == 0 && pDirection.y < 0) ||
-        (pOrigin.y == uSVOSize && pDirection.y > 0) ||
+        (pOrigin.y == uSVDAGSize && pDirection.y > 0) ||
         (pOrigin.z == 0 && pDirection.z < 0) ||
-        (pOrigin.z == uSVOSize && pDirection.z > 0))
+        (pOrigin.z == uSVDAGSize && pDirection.z > 0))
       return 0; // If ray has gone outside the tree return 0
   }
 
   uint nodeIndex = 0;
   vec3 nodeOrigin = {0, 0, 0};
-  uint currentNodeSize = uSVOSize;
+  uint currentNodeSize = uSVDAGSize;
   for (;;) {
     // Return if the node is a leaf and is not air
     if (nodeIndex > uMidpoint)
@@ -163,23 +177,25 @@ uint traverse(vec3 pOrigin, vec3 pDirection, vec3 pDirectionInv, inout ivec3 pNo
 
     // Advance ray if voxel is air
     if (nodeIndex == uMidpoint) {
+      // ++pAdvanceCount;
       pOrigin = advanceRay(pOrigin, pDirection, pDirectionInv, nodeOrigin, currentNodeSize, pNormal, pDepth);
       if ((pOrigin.x <= 0 && pDirection.x < 0) ||
-          (pOrigin.x >= uSVOSize && pDirection.x > 0) ||
+          (pOrigin.x >= uSVDAGSize && pDirection.x > 0) ||
           (pOrigin.y <= 0 && pDirection.y < 0) ||
-          (pOrigin.y >= uSVOSize && pDirection.y > 0) ||
+          (pOrigin.y >= uSVDAGSize && pDirection.y > 0) ||
           (pOrigin.z <= 0 && pDirection.z < 0) ||
-          (pOrigin.z >= uSVOSize && pDirection.z > 0)) {
+          (pOrigin.z >= uSVDAGSize && pDirection.z > 0)) {
         pDepth = uFar;
         return 0; // If ray has gone outside the tree return 0
       }
       nodeIndex = 0; // Go back to the top of the tree
       nodeOrigin = vec3(0, 0, 0);
-      currentNodeSize = uSVOSize;
+      currentNodeSize = uSVDAGSize;
       continue;
     }
 
     // Get child at current ray origin if the ray isnt inside a leaf (going deeper in the tree)
+    ++pAdvanceCount;
     currentNodeSize = currentNodeSize >> 1; // Divide current node size by 2
     vec3 pos = pOrigin;
     pos -= nodeOrigin;

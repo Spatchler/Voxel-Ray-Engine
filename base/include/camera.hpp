@@ -2,7 +2,7 @@
 
 #include "window.hpp"
 #include "shader.hpp"
-#include "world.hpp"
+#include "SparseVoxelDAG.hpp"
 
 namespace RTVE {
   class Camera {
@@ -21,7 +21,9 @@ namespace RTVE {
     void moveLeft(float pSpeed);
     void moveRight(float pSpeed);
 
-    void render(Window& pWindow);
+    void updateViewportSize(const glm::vec2& pSize);
+
+    void render();
     void debugRender(Window& pWindow);
 
     void attachSparseVoxelDAG(SparseVoxelDAG* pSVDAG);
@@ -33,6 +35,13 @@ namespace RTVE {
     void updateVectors();
     glm::vec3 mFront, mUp, mRight, mWorldUp = {0, 0, 0};
     float mYaw, mPitch = 0.f;
+
+    float mNear = 0.1f;
+    float mFar = 10000.f;
+    float mInverseNear;
+    float mInverseFrustumDepth;
+    glm::vec2 mHalfResolutionInv;
+    glm::mat4 mProjection;
 
     SparseVoxelDAG* mAttachedSVDAG;
     

@@ -85,6 +85,7 @@ bool RTVE::Window::shouldWindowClose() {
 void RTVE::Window::setViewportSize(glm::vec2 pSize) {
   glViewport(0, 0, pSize.x, pSize.y);
   mSize = pSize;
+  framebufferSizeCallback(pSize);
 }
 
 void RTVE::Window::updateViewportSize() {

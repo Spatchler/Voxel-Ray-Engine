@@ -1,38 +1,39 @@
 #include "RTVE.hpp"
 
-#define SVO_SIZE 64
+#define SVDAG_SIZE 128
 
 int main() {
   RTVE::Window& window = RTVE::Window::get();
   window.init("RTVE Demo");
   window.captureCursor();
+  window.setClearColor(glm::vec4(0.1f, 0.1f, 0.1f, 0.f));
 
   RTVE::Camera camera;
 
-  RTVE::SparseVoxelDAG world(SVO_SIZE);
+  RTVE::SparseVoxelDAG world(SVDAG_SIZE);
 
   world.mData.push_back({glm::vec4(0.1, 0.1, 0.1, 1)}); // Air - background color
 
-  for (int x = -SVO_SIZE; x < SVO_SIZE / 2.f; ++x) {
-    for (int y = -SVO_SIZE; y < SVO_SIZE / 2.f; ++y) {
-      for (int z = -SVO_SIZE; z < SVO_SIZE / 2.f; ++z) {
-        if (std::sqrtf(x*x + z*z + y*y) < SVO_SIZE / 2.f)
-          world.insert(glm::vec3(x + SVO_SIZE / 2.f, y + SVO_SIZE / 2.f, z + SVO_SIZE / 2.f), {glm::vec4(1, 1, 1, 0)});
+  for (int x = -SVDAG_SIZE; x < SVDAG_SIZE / 2.f; ++x) {
+    for (int y = -SVDAG_SIZE; y < SVDAG_SIZE / 2.f; ++y) {
+      for (int z = -SVDAG_SIZE; z < SVDAG_SIZE / 2.f; ++z) {
+        if (std::sqrtf(x*x + z*z + y*y) < SVDAG_SIZE / 2.f)
+          world.insert(glm::vec3(x + SVDAG_SIZE / 2.f, y + SVDAG_SIZE / 2.f, z + SVDAG_SIZE / 2.f), {glm::vec4(1, 1, 1, 0)});
       }
     }
   }
   // world.insert(glm::vec3(0, 0, 0), {glm::vec4(1, 1, 1, 0)});
-  // world.insert(glm::vec3(SVO_SIZE-1, SVO_SIZE-1, SVO_SIZE-1), {glm::vec4(1, 1, 1, 0)});
+  // world.insert(glm::vec3(SVDAG_SIZE-1, SVDAG_SIZE-1, SVDAG_SIZE-1), {glm::vec4(1, 1, 1, 0)});
   world.generateDebugMesh();
   
-  camera.mPos = glm::vec3(0, 0, 0);
-  camera.setDirection(0, 0);
+  camera.mPos = glm::vec3(SVDAG_SIZE * 2, SVDAG_SIZE * 2, SVDAG_SIZE * 2);
+  camera.setDirection(-135.f, -45.f);
 
   camera.attachSparseVoxelDAG(&world);
 
   glm::vec2 lastMousePos;
 
-  window.mouseCallback = [&camera, &lastMousePos](glm::vec2 pOffset){
+  window.mouseCallback = [&camera, &lastMousePos](glm::vec2 pOffset) {
     glm::vec2 offset(pOffset.x - lastMousePos.x, lastMousePos.y - pOffset.y);
     lastMousePos = pOffset;
     
@@ -45,11 +46,16 @@ int main() {
     if (camera.getPitch() < -89.0f)
       camera.setPitch(-89.0f);
 
+    // std::println("Camera yaw: {}, pitch: {}", camera.getYaw(), camera.getPitch());
     // std::println("Camera direction: {}, {}, {}", camera.getDirectionVector().x, camera.getDirectionVector().y, camera.getDirectionVector().z);
     // std::println("Camera position: {}, {}, {}", camera.mPos.x, camera.mPos.y, camera.mPos.z);
   };
+  window.framebufferSizeCallback = [&camera](glm::vec2 pSize) {
+    camera.updateViewportSize(pSize);
+  };
+  camera.updateViewportSize(window.getSize());
 
-  float deltaTime, lastFrame, lastTimeFPSPrinted = 0.f;;
+  float deltaTime, lastFrame, lastTimeFPSPrinted = 0.f;
   uint frames = 0;
   bool debugRendering = false;
   bool fLastPressed = false;
@@ -61,7 +67,7 @@ int main() {
     window.pollEvents();
     window.clear();
 
-    camera.render(window);
+    camera.render();
     if (debugRendering)
       camera.debugRender(window);
 

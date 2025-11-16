@@ -1,4 +1,4 @@
-#include "world.hpp"
+#include "SparseVoxelDAG.hpp"
 
 RTVE::SparseVoxelDAG::SparseVoxelDAG(uint pSize)
 :mSize(pSize), mMaxDepth(log2(pSize)), mMidpoint(UINT_MAX / 2) {
@@ -70,7 +70,6 @@ void RTVE::SparseVoxelDAG::generateDebugMesh() {
   insertCubeVerticesImpl(vertices, mSize, glm::vec3(0, 0, 0), 0);
 
   mDebugVertexCount = vertices.size();
-  std::println("Count: {}", mDebugVertexCount);
   
   glGenVertexArrays(1, &mDebugVAO);
   glGenBuffers(1, &mDebugVBO);
