@@ -9,7 +9,8 @@ A top down Sparse Voxel DAG ray caster written in C++ with OpenGL.
 
 Dependencies:
 * GLFW
+* ASSIMP
 
-Build with premake:
+Build with premake (probably wont work):
 `premake5 gmake && make`
 
