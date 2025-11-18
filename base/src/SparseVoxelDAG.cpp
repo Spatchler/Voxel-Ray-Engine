@@ -106,7 +106,7 @@ void RTVE::SparseVoxelDAG::insertImpl(const glm::vec3& pPoint, const uint& pData
   pos.y = floor(pos.y);
   pos.z = floor(pos.z);
   pNodeOrigin += pos * (float)pNodeSize;
-  uint& node = mIndices.at(pNodeIndex)[toChildIndex(pos)];
+  uint& node = mIndices[pNodeIndex][toChildIndex(pos)];
   pNodeIndex = node;
 
   if (pNodeSize == 1) { // Insert data index once we reach max depth
