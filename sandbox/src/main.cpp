@@ -1,6 +1,6 @@
 #include "RTVE.hpp"
 
-#define SVDAG_SIZE 128
+#define SVDAG_SIZE 64
 
 int main() {
   RTVE::Window& window = RTVE::Window::get();
@@ -10,26 +10,31 @@ int main() {
 
   RTVE::Camera camera;
 
-  RTVE::SparseVoxelDAG world(SVDAG_SIZE);
+  // RTVE::SparseVoxelDAG world(SVDAG_SIZE);
 
-  world.mData.push_back({glm::vec4(0.1, 0.1, 0.1, 1)}); // Air - background color
+  // world.mData.push_back({glm::vec4(0.1, 0.1, 0.1, 1)}); // Air - background color
 
-  for (int x = -SVDAG_SIZE; x < SVDAG_SIZE / 2.f; ++x) {
-    for (int y = -SVDAG_SIZE; y < SVDAG_SIZE / 2.f; ++y) {
-      for (int z = -SVDAG_SIZE; z < SVDAG_SIZE / 2.f; ++z) {
-        if (std::sqrtf(x*x + z*z + y*y) < SVDAG_SIZE / 2.f)
-          world.insert(glm::vec3(x + SVDAG_SIZE / 2.f, y + SVDAG_SIZE / 2.f, z + SVDAG_SIZE / 2.f), {glm::vec4(1, 1, 1, 0)});
-      }
-    }
-  }
-  // world.insert(glm::vec3(0, 0, 0), {glm::vec4(1, 1, 1, 0)});
-  // world.insert(glm::vec3(SVDAG_SIZE-1, SVDAG_SIZE-1, SVDAG_SIZE-1), {glm::vec4(1, 1, 1, 0)});
-  world.generateDebugMesh();
+  // for (int x = -SVDAG_SIZE; x < SVDAG_SIZE / 2.f; ++x) {
+  //   for (int y = -SVDAG_SIZE; y < SVDAG_SIZE / 2.f; ++y) {
+  //     for (int z = -SVDAG_SIZE; z < SVDAG_SIZE / 2.f; ++z) {
+  //       if (std::sqrtf(x*x + z*z + y*y) < SVDAG_SIZE / 2.f)
+  //         world.insert(glm::vec3(x + SVDAG_SIZE / 2.f, y + SVDAG_SIZE / 2.f, z + SVDAG_SIZE / 2.f), {glm::vec4(1, 1, 1, 0)});
+  //     }
+  //   }
+  // }
+  // world.generateDebugMesh();
+
+  RTVE::SVDAGModel model("sandbox/res/HollowKnight.obj", SVDAG_SIZE);
+  // model.mData.push_back({glm::vec4(0.1, 0.1, 0.1, 1)}); // Air - background color
+  model.generateDebugMesh();
+  camera.attachSparseVoxelDAG(&model);
   
-  camera.mPos = glm::vec3(SVDAG_SIZE * 2, SVDAG_SIZE * 2, SVDAG_SIZE * 2);
-  camera.setDirection(-135.f, -45.f);
+  camera.mPos = glm::vec3(0, 0, 0);
+  camera.setDirection(0, 0);
+  // camera.mPos = glm::vec3(SVDAG_SIZE * 2, SVDAG_SIZE * 2, SVDAG_SIZE * 2);
+  // camera.setDirection(-135.f, -45.f);
 
-  camera.attachSparseVoxelDAG(&world);
+  // camera.attachSparseVoxelDAG(&world);
 
   glm::vec2 lastMousePos;
 
@@ -104,6 +109,6 @@ int main() {
     }
   }
 
-  world.releaseDebugMesh();
+  // world.releaseDebugMesh();
 }
 

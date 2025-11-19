@@ -17,8 +17,8 @@ namespace RTVE {
     void processNode(aiNode* pNode, const aiScene* pScene);
     void processMesh(aiMesh* pMesh, const aiScene* pScene);
 
-    std::vector<glm::vec3> mVertices;
-    std::vector<uint> mIndices;
+    std::vector<glm::vec3> mMeshVertices;
+    std::vector<uint> mMeshIndices;
 
     std::vector<std::vector<std::vector<bool>>> mVoxelGrid;
     uint mResolution;

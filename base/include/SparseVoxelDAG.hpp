@@ -40,7 +40,7 @@ namespace RTVE {
 
     std::vector<std::array<uint, 8>> mIndices;
     std::vector<VoxelData> mData;
-  private:
+  protected:
     void insertImpl(const glm::vec3& pPoint, const uint& pData, uint pNodeIndex, uint pNodeSize, glm::vec3 pNodeOrigin);
 
     void insertCubeVerticesImpl(std::vector<glm::vec3>& pVertices, uint pNodeSize, glm::vec3 pNodeOrigin, uint pNodeIndex);

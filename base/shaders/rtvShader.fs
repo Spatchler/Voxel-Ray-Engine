@@ -44,9 +44,9 @@ void main() {
   float brightness = (dot(light, normal) + 1) / 2;
 
   // Lit
-  // v.color.r = max(0, v.color.r * brightness);
-  // v.color.g = max(0, v.color.g * brightness);
-  // v.color.b = max(0, v.color.b * brightness);
+  v.color.r = max(0, v.color.r * brightness);
+  v.color.g = max(0, v.color.g * brightness);
+  v.color.b = max(0, v.color.b * brightness);
   
   // Normals
   // v.color.r = (normal.x + 1) / 2;
@@ -54,9 +54,9 @@ void main() {
   // v.color.b = (normal.z + 1) / 2;
 
   // Advance count
-  v.color.r = advanceCount / 100.f;
-  v.color.g = 0;
-  v.color.b = 0;
+  // v.color.r = advanceCount / 100.f;
+  // v.color.g = 0;
+  // v.color.b = 0;
 
   v.color.a = depth;
   fragColor = v.color;
