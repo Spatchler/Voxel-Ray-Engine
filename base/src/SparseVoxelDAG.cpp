@@ -39,10 +39,12 @@ void RTVE::SparseVoxelDAG::print() {
 }
 
 void RTVE::SparseVoxelDAG::drawDebug() {
+#ifdef _DEBUG
   glBindVertexArray(mDebugVAO);
   // glDrawElements(GL_LINE_STRIP, count, GL_UNSIGNED_INT, 0);
   glDrawArrays(GL_LINES, 0, mDebugVertexCount);
   glBindVertexArray(0);
+#endif
 }
 
 uint RTVE::SparseVoxelDAG::toChildIndex(glm::vec3 pPos) {
@@ -63,6 +65,9 @@ glm::vec3 RTVE::SparseVoxelDAG::toPos(uint pChildIndex) {
 }
 
 void RTVE::SparseVoxelDAG::generateDebugMesh() {
+#ifdef _DEBUG
+  RTVE::ScopedTimer t("Generating debug mesh");
+
   // Generate mesh
   std::vector<glm::vec3> vertices;
   // std::vector<uint> indices;
@@ -87,12 +92,15 @@ void RTVE::SparseVoxelDAG::generateDebugMesh() {
   // glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(uint), &indices[0], GL_STATIC_DRAW);
 
   glBindVertexArray(0);
+#endif
 }
 
 void RTVE::SparseVoxelDAG::releaseDebugMesh() {
+#ifdef _DEBUG
   glDeleteVertexArrays(1, &mDebugVAO);
   glDeleteBuffers(1, &mDebugVBO);
   glDeleteBuffers(1, &mDebugEBO);
+#endif
 }
 
 void RTVE::SparseVoxelDAG::insertImpl(const glm::vec3& pPoint, const uint& pDataIndex, uint pNodeIndex, uint pNodeSize, glm::vec3 pNodeOrigin) {

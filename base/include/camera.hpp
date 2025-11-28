@@ -45,9 +45,12 @@ namespace RTVE {
 
     SparseVoxelDAG* mAttachedSVDAG;
     
-    Shader mDAGShader, mDebugShader;
+    Shader mSVDAGShader;
     uint mScreenVAO, mScreenVBO;
     uint mSVDAGindicesSSBO, mSVDAGdataSSBO;
+#ifdef _DEBUG
+    Shader mDebugShader;
+#endif
   };
 }
 

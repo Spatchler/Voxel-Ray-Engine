@@ -10,18 +10,23 @@ float RTVE::v3index(glm::tvec3<float> v, uint8_t i) {
   return 0.f;
 }
 
-void RTVE::printProgressBar(float pProgress, const std::string& pTitle, uint pWidth) {
-  std::print("\x1b[1F\x1b[2K{} |", pTitle);
+void RTVE::printProgressBar(float pProgress, const std::string& pTitle, uint8_t pPrimaryEscapeColour, uint8_t pSecondaryEscapeColour, uint pWidth) {
+  std::print("\x1b[1F\x1b[2K{} ", pTitle);
   float threshold = ceil(pProgress * pWidth);
-  std::print("\x1b[41m");
+  std::print("\x1b[{}m\x1b[{}m", pPrimaryEscapeColour, pPrimaryEscapeColour + 10);
   for (uint i = 0; i < threshold; ++i) {
     std::print(" ");
   }
-  std::print("\x1b[40m");
-  for (uint i = 0; i < pWidth - threshold; ++i) {
-    std::print(" ");
+  if (threshold <= pWidth - 1) {
+    std::print("\x1b[{}m\x1b[{}m", pSecondaryEscapeColour + 10, pSecondaryEscapeColour);
+    for (uint i = 0; i < pWidth - threshold - 1; ++i) {
+      std::print(" ");
+    }
+    std::print("\x1b[49m");
   }
-  std::println("\x1b[49m| {}%", ceil(pProgress*100)); // Reset
-  // std::println("");
+  else {
+    std::print("\x1b[49;{}m", pPrimaryEscapeColour);
+  }
+  std::println("\x1b[39m {}%", ceil(pProgress*100)); // Reset
 }
 

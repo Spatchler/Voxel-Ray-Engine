@@ -1,5 +1,7 @@
 #pragma once
 
+#include "timer.hpp"
+
 #include <vector>
 #include <print>
 #include <algorithm>
@@ -49,8 +51,10 @@ namespace RTVE {
 
     uint mDebugVertexCount;
 
-    uint mDebugVAO, mDebugVBO, mDebugEBO;
     uint mSize, mMaxDepth, mMidpoint;
+#ifdef _DEBUG
+    uint mDebugVAO, mDebugVBO, mDebugEBO;
+#endif
   };
 }
 

@@ -1,6 +1,6 @@
 #include "RTVE.hpp"
 
-#define SVDAG_SIZE 64
+#define SVDAG_SIZE 512
 
 int main() {
   RTVE::Window& window = RTVE::Window::get();
@@ -24,7 +24,12 @@ int main() {
   // }
   // world.generateDebugMesh();
 
-  RTVE::SVDAGModel model("sandbox/res/HollowKnight.obj", SVDAG_SIZE);
+  // RTVE::SVDAGModel model("sandbox/res/HollowKnight.obj", SVDAG_SIZE);
+  // RTVE::SVDAGModel model("sandbox/res/models/tyra.obj", SVDAG_SIZE);
+  // RTVE::SVDAGModel model("sandbox/res/models/bunny.obj", SVDAG_SIZE);
+  // RTVE::SVDAGModel model("sandbox/res/models/dragon.obj", SVDAG_SIZE);
+  // RTVE::SVDAGModel model("sandbox/res/models/sponza/sponza.obj", SVDAG_SIZE);
+  RTVE::SVDAGModel model("sandbox/res/GreenPlayer.obj", SVDAG_SIZE);
   // model.mData.push_back({glm::vec4(0.1, 0.1, 0.1, 1)}); // Air - background color
   model.generateDebugMesh();
   camera.attachSparseVoxelDAG(&model);
@@ -109,6 +114,7 @@ int main() {
     }
   }
 
+  model.releaseDebugMesh();
   // world.releaseDebugMesh();
 }
 

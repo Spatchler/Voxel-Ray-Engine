@@ -1,7 +1,7 @@
 #include "camera.hpp"
 
 RTVE::Camera::Camera()
-:mDAGShader("base/shaders/rtvShader.vs", "base/shaders/rtvShader.fs"), mDebugShader("base/shaders/debugShader.vs", "base/shaders/debugShader.fs"), mWorldUp(0, 1, 0), mPos(0, 0, 0) {
+:mSVDAGShader("base/shaders/rtvShader.vs", "base/shaders/rtvShader.fs"), mDebugShader("base/shaders/debugShader.vs", "base/shaders/debugShader.fs"), mWorldUp(0, 1, 0), mPos(0, 0, 0) {
   float vertices[] {
     -1.0f,  1.0f,
     -1.0f, -1.0f,
@@ -72,16 +72,16 @@ void RTVE::Camera::updateViewportSize(const glm::vec2& pSize) {
 }
 
 void RTVE::Camera::render() {
-  mDAGShader.use();
-  mDAGShader.setVec3("uCamPos", mPos);
-  mDAGShader.setInt("uSVDAGSize", mAttachedSVDAG->getSize());
+  mSVDAGShader.use();
+  mSVDAGShader.setVec3("uCamPos", mPos);
+  mSVDAGShader.setInt("uSVDAGSize", mAttachedSVDAG->getSize());
   glm::mat4 view = glm::lookAt(mPos, mPos + mFront, mUp);
-  mDAGShader.setMat4("uProjViewInv", glm::inverse(mProjection * view));
-  mDAGShader.setFloat("uInverseNear", mInverseNear);
-  mDAGShader.setFloat("uInverseFrustumDepth", mInverseFrustumDepth);
-  mDAGShader.setFloat("uFar", mFar);
-  mDAGShader.setInt("uMidpoint", mAttachedSVDAG->getMidpoint());
-  mDAGShader.setVec2("uHalfResolutionInv", mHalfResolutionInv);
+  mSVDAGShader.setMat4("uProjViewInv", glm::inverse(mProjection * view));
+  mSVDAGShader.setFloat("uInverseNear", mInverseNear);
+  mSVDAGShader.setFloat("uInverseFrustumDepth", mInverseFrustumDepth);
+  mSVDAGShader.setFloat("uFar", mFar);
+  mSVDAGShader.setInt("uMidpoint", mAttachedSVDAG->getMidpoint());
+  mSVDAGShader.setVec2("uHalfResolutionInv", mHalfResolutionInv);
 
   // Bind SSBO
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, mSVDAGindicesSSBO);
@@ -102,25 +102,26 @@ void RTVE::Camera::render() {
 }
 
 void RTVE::Camera::debugRender(Window& pWindow) {
+#ifdef _DEBUG
   mDebugShader.use();
-  glm::mat4 projection = glm::perspective(glm::radians(45.0f), pWindow.getSize().x / pWindow.getSize().y, 0.1f, 10000.0f);
   glm::mat4 view = glm::lookAt(mPos, mPos + mFront, mUp);
   glm::mat4 model = glm::mat4(1.0f);
   model = glm::scale(model, glm::vec3(mAttachedSVDAG->getSize(), mAttachedSVDAG->getSize(), mAttachedSVDAG->getSize()));
   mDebugShader.setMat4("uModel", model);
   mDebugShader.setMat4("uView", view);
-  mDebugShader.setMat4("uProjection", projection);
+  mDebugShader.setMat4("uProjection", mProjection);
 
   mAttachedSVDAG->drawDebug();
+#endif
 }
 
 void RTVE::Camera::attachSparseVoxelDAG(SparseVoxelDAG* pSVDAG) {
   mAttachedSVDAG = pSVDAG;
 
   // Indices buffer --------------------------------------
-  mDAGShader.use();
+  mSVDAGShader.use();
   // Bind buffer
-  glBindAttribLocation(mDAGShader.getID(), 0, "SVDAGindices");
+  glBindAttribLocation(mSVDAGShader.getID(), 0, "SVDAGindices");
   glGenBuffers(1, &mSVDAGindicesSSBO);
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, mSVDAGindicesSSBO);
   glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, mSVDAGindicesSSBO);
@@ -131,9 +132,9 @@ void RTVE::Camera::attachSparseVoxelDAG(SparseVoxelDAG* pSVDAG) {
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 
   // Data buffer -----------------------------------------
-  mDAGShader.use();
+  mSVDAGShader.use();
   // Bind buffer
-  glBindAttribLocation(mDAGShader.getID(), 1, "SVDAGdata");
+  glBindAttribLocation(mSVDAGShader.getID(), 1, "SVDAGdata");
   glGenBuffers(1, &mSVDAGdataSSBO);
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, mSVDAGdataSSBO);
   glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, mSVDAGdataSSBO);
@@ -147,6 +148,8 @@ void RTVE::Camera::attachSparseVoxelDAG(SparseVoxelDAG* pSVDAG) {
 RTVE::Camera::~Camera() {
   glDeleteVertexArrays(1, &mScreenVAO);
   glDeleteBuffers(1, &mScreenVBO);
+  glDeleteBuffers(1, &mSVDAGdataSSBO);
+  glDeleteBuffers(1, &mSVDAGindicesSSBO);
 }
 
 void RTVE::Camera::updateVectors() {
