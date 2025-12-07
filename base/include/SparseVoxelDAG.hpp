@@ -1,6 +1,7 @@
 #pragma once
 
 #include "timer.hpp"
+#include "shader.hpp"
 
 #include <vector>
 #include <print>
@@ -32,7 +33,7 @@ namespace RTVE {
 
     void print();
 
-    void drawDebug();
+    virtual void drawDebug(Shader* pShader);
 
     static uint toChildIndex(glm::vec3 pPos);
     static glm::vec3 toPos(uint pChildIndex);
@@ -53,7 +54,7 @@ namespace RTVE {
 
     uint mSize, mMaxDepth, mMidpoint;
 #ifdef _DEBUG
-    uint mDebugVAO, mDebugVBO, mDebugEBO;
+    uint mDebugVAO, mDebugVBO;
 #endif
   };
 }

@@ -28,10 +28,11 @@ int main() {
   // RTVE::SVDAGModel model("sandbox/res/models/tyra.obj", SVDAG_SIZE);
   // RTVE::SVDAGModel model("sandbox/res/models/bunny.obj", SVDAG_SIZE);
   // RTVE::SVDAGModel model("sandbox/res/models/dragon.obj", SVDAG_SIZE);
-  // RTVE::SVDAGModel model("sandbox/res/models/sponza/sponza.obj", SVDAG_SIZE);
-  RTVE::SVDAGModel model("sandbox/res/GreenPlayer.obj", SVDAG_SIZE);
+  RTVE::SVDAGModel model("sandbox/res/models/sponza/sponza.obj", SVDAG_SIZE);
+  // RTVE::SVDAGModel model("sandbox/res/GreenPlayer.obj", SVDAG_SIZE);
   // model.mData.push_back({glm::vec4(0.1, 0.1, 0.1, 1)}); // Air - background color
   model.generateDebugMesh();
+  model.generateModelDebugMesh();
   camera.attachSparseVoxelDAG(&model);
   
   camera.mPos = glm::vec3(0, 0, 0);
@@ -77,9 +78,9 @@ int main() {
     window.pollEvents();
     window.clear();
 
-    camera.render();
     if (debugRendering)
       camera.debugRender(window);
+    camera.render();
 
     // Input - controls
     float cameraSpeed = 10.f * deltaTime;
@@ -115,6 +116,7 @@ int main() {
   }
 
   model.releaseDebugMesh();
+  model.releaseModelDebugMesh();
   // world.releaseDebugMesh();
 }
 

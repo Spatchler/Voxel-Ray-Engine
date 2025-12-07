@@ -105,13 +105,10 @@ void RTVE::Camera::debugRender(Window& pWindow) {
 #ifdef _DEBUG
   mDebugShader.use();
   glm::mat4 view = glm::lookAt(mPos, mPos + mFront, mUp);
-  glm::mat4 model = glm::mat4(1.0f);
-  model = glm::scale(model, glm::vec3(mAttachedSVDAG->getSize(), mAttachedSVDAG->getSize(), mAttachedSVDAG->getSize()));
-  mDebugShader.setMat4("uModel", model);
   mDebugShader.setMat4("uView", view);
   mDebugShader.setMat4("uProjection", mProjection);
 
-  mAttachedSVDAG->drawDebug();
+  mAttachedSVDAG->drawDebug(&mDebugShader);
 #endif
 }
 

@@ -35,6 +35,7 @@ void main() {
   float advanceCount = 0;
   uint index = traverse(uCamPos, direction, directionInv, normal, depth, advanceCount);
   gl_FragDepth = ((1/depth) - uInverseNear) * uInverseFrustumDepth;
+  // gl_FragDepth = (depth - 0.1f) / (10000.f - 0.1f);
   VoxelData v = data[index];
   if (index == 0) {
     fragColor = v.color;

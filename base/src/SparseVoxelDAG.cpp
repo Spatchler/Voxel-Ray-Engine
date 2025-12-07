@@ -38,10 +38,15 @@ void RTVE::SparseVoxelDAG::print() {
   std::println("------------------------------------\n");
 }
 
-void RTVE::SparseVoxelDAG::drawDebug() {
+void RTVE::SparseVoxelDAG::drawDebug(Shader* pShader) {
 #ifdef _DEBUG
+  pShader->setVec3("uColour", glm::vec3(1, 0, 0));
+
+  glm::mat4 model = glm::mat4(1.0f);
+  model = glm::scale(model, glm::vec3(mSize, mSize, mSize));
+  pShader->setMat4("uModel", model);
+
   glBindVertexArray(mDebugVAO);
-  // glDrawElements(GL_LINE_STRIP, count, GL_UNSIGNED_INT, 0);
   glDrawArrays(GL_LINES, 0, mDebugVertexCount);
   glBindVertexArray(0);
 #endif
@@ -99,7 +104,6 @@ void RTVE::SparseVoxelDAG::releaseDebugMesh() {
 #ifdef _DEBUG
   glDeleteVertexArrays(1, &mDebugVAO);
   glDeleteBuffers(1, &mDebugVBO);
-  glDeleteBuffers(1, &mDebugEBO);
 #endif
 }
 
