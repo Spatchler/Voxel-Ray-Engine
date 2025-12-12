@@ -16,6 +16,5 @@ A Sparse Voxel DAG ray caster written in C++ with OpenGL and a CPU DDA triangle 
 (probably wont work)
 `premake5 gmake && make`
 
-![](.github/sphere.png)![](.github/debugRendering.png)
-![](.github/closeUp.png)![](.github/far.png)
+![](.github/debugRendering.png)
 
