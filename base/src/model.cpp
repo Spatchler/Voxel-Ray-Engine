@@ -194,7 +194,6 @@ void RTVE::SVDAGModel::loadModel(const std::string& pPath) {
     glm::vec3 mhDir = points[2] - points[1];
     glm::vec3 mhDirInv = 1.f/mhDir;
 
-    float blueValue = 0.f;
     // Iterate over along the dominant axis traversing between the two lines
     for (float dominantAxisValue = v3index(points[0], dominantAxisIndex); dominantAxisValue <= v3index(points[2], dominantAxisIndex); ++dominantAxisValue) {
       glm::vec3* l1Dir = &lmDir;
@@ -204,33 +203,65 @@ void RTVE::SVDAGModel::loadModel(const std::string& pPath) {
       if ((v3index(points[1], dominantAxisIndex) < dominantAxisValue) || (v3index(lmDir, dominantAxisIndex) == 0)) {
         l1Dir = &mhDir;
         l1DirInv = &mhDirInv;
-        l2Dir = &lhDir;
-        l2DirInv = &lhDirInv;
       }
 
       glm::vec2 l1Pos;
       glm::vec2 l2Pos;
 
-      float l2t = (dominantAxisValue - v3index(points[0], dominantAxisIndex)) * v3index(*l2DirInv, dominantAxisIndex);
-      l2Pos = glm::vec2(v3index(points[0], nonDominantAxisIndices[0]), v3index(points[0], nonDominantAxisIndices[1])) // Origin
-                        + l2t * glm::vec2(v3index(*l2Dir, nonDominantAxisIndices[0]), v3index(*l2Dir, nonDominantAxisIndices[1]));
+      // L2
+      // Normal plane
+      float t = (dominantAxisValue - v3index(points[0], dominantAxisIndex)) * v3index(*l2DirInv, dominantAxisIndex);
+      glm::vec2 l2Posa = glm::vec2(v3index(points[0], nonDominantAxisIndices[0]), v3index(points[0], nonDominantAxisIndices[1])) // Origin
+                        + t * glm::vec2(v3index(*l2Dir, nonDominantAxisIndices[0]), v3index(*l2Dir, nonDominantAxisIndices[1]));
+      // Next plane
+      t = (std::min(dominantAxisValue + 1, v3index(points[2], dominantAxisIndex)) - v3index(points[0], dominantAxisIndex)) * v3index(*l2DirInv, dominantAxisIndex);
+      glm::vec2 l2Posb = glm::vec2(v3index(points[0], nonDominantAxisIndices[0]), v3index(points[0], nonDominantAxisIndices[1])) // Origin
+                        + t * glm::vec2(v3index(*l2Dir, nonDominantAxisIndices[0]), v3index(*l2Dir, nonDominantAxisIndices[1]));
 
       if ((v3index(points[1], dominantAxisIndex) >= dominantAxisValue) && (v3index(points[1], dominantAxisIndex) <= dominantAxisValue + 1)) {
         l1Pos = glm::vec2(v3index(points[1], nonDominantAxisIndices[0]), v3index(points[1], nonDominantAxisIndices[1]));
-        std::println("Hi---------------------------------------------------------------------------");
+
+        // Choose which has the greatest length
+        if (glm::length(l2Posa - l1Pos) >= glm::length(l2Posb - l1Pos))
+          l2Pos = l2Posa;
+        else
+          l2Pos = l2Posb;
       }
       else {
-        std::println("Doing double method --------------------------------------------------------------------------- ");
-        float l1t = (dominantAxisValue - v3index(points[1], dominantAxisIndex)) * v3index(*l1DirInv, dominantAxisIndex);
+        // L1
+        // Normal plane
+        t = (dominantAxisValue - v3index(points[1], dominantAxisIndex)) * v3index(*l1DirInv, dominantAxisIndex);
         glm::vec2 l1Posa = glm::vec2(v3index(points[1], nonDominantAxisIndices[0]), v3index(points[1], nonDominantAxisIndices[1])) // Origin
-                          + l1t * glm::vec2(v3index(*l1Dir, nonDominantAxisIndices[0]), v3index(*l1Dir, nonDominantAxisIndices[1]));
-        l1t = (std::min(dominantAxisValue + 1, v3index(points[2], dominantAxisIndex)) - v3index(points[1], dominantAxisIndex)) * v3index(*l1DirInv, dominantAxisIndex);
+                          + t * glm::vec2(v3index(*l1Dir, nonDominantAxisIndices[0]), v3index(*l1Dir, nonDominantAxisIndices[1]));
+        // Next plane
+        t = (std::min(dominantAxisValue + 1, v3index(points[2], dominantAxisIndex)) - v3index(points[1], dominantAxisIndex)) * v3index(*l1DirInv, dominantAxisIndex);
         glm::vec2 l1Posb = glm::vec2(v3index(points[1], nonDominantAxisIndices[0]), v3index(points[1], nonDominantAxisIndices[1])) // Origin
-                          + l1t * glm::vec2(v3index(*l1Dir, nonDominantAxisIndices[0]), v3index(*l1Dir, nonDominantAxisIndices[1]));
+                          + t * glm::vec2(v3index(*l1Dir, nonDominantAxisIndices[0]), v3index(*l1Dir, nonDominantAxisIndices[1]));
+
+        // Choose which has the greatest length
+        if (glm::length(l2Posa - l1Posa) >= glm::length(l2Posb - l1Posa))
+          l2Pos = l2Posa;
+        else
+          l2Pos = l2Posb;
+
         if (glm::length(l2Pos - l1Posa) >= glm::length(l2Pos - l1Posb))
           l1Pos = l1Posa;
         else
           l1Pos = l1Posb;
+      }
+
+      // TODO: This could be optimized mixing it in rahter than doing it after
+      uint index = 4;
+      if ((v3index(points[0], dominantAxisIndex) >= dominantAxisValue) && (v3index(points[0], dominantAxisIndex) <= dominantAxisValue + 1))
+        index = 0;
+      if ((v3index(points[2], dominantAxisIndex) >= dominantAxisValue) && (v3index(points[2], dominantAxisIndex) <= dominantAxisValue + 1))
+        index = 2;
+      if (index != 4) {
+        glm::vec2 v2(v3index(points[index], nonDominantAxisIndices[0]), v3index(points[index], nonDominantAxisIndices[1]));
+        if (glm::length(l2Pos - v2) >= glm::length(l2Pos - l1Pos))
+          l1Pos = v2;
+        else if (glm::length(l1Pos - v2) >= glm::length(l1Pos - l2Pos))
+          l2Pos = v2;
       }
 
       glm::vec2 dir = l2Pos - l1Pos; // Dir from l1 to l2 intersection points
@@ -249,10 +280,7 @@ void RTVE::SVDAGModel::loadModel(const std::string& pPath) {
       std::println("l1Pos: {}, {}, l2Pos: {}, {}", l1Pos.x, l1Pos.y, l2Pos.x, l2Pos.y);
 
       // Ray start pos is going wrong
-      drawLine2(dominantAxisIndex, dominantAxisValue, l1Pos, l2Pos, dir, dirInv, blueValue);
-      blueValue += 0.1f;
-      if (blueValue > 1)
-        blueValue = 0.f;
+      drawLine2(dominantAxisIndex, dominantAxisValue, l1Pos, l2Pos, dir, dirInv);
     }
 
     if (mTriangleCount > 100) {
@@ -301,8 +329,7 @@ void RTVE::SVDAGModel::processMesh(aiMesh* pMesh, const aiScene* pScene) {
   }
 }
 
-void RTVE::SVDAGModel::drawLine2(uint8_t pDominantAxisIndex, float pDominantAxisValue, const glm::vec2& pStart, const glm::vec2& pEnd, const glm::vec2& pDir, const glm::vec2& pDirInv, float pBlueValue) {
-  float redValue = 0.f;
+void RTVE::SVDAGModel::drawLine2(uint8_t pDominantAxisIndex, float pDominantAxisValue, const glm::vec2& pStart, const glm::vec2& pEnd, const glm::vec2& pDir, const glm::vec2& pDirInv) {
   glm::vec3 v = glm::floor(toVec3(pDominantAxisValue, pStart.x, pStart.y, pDominantAxisIndex));
   if (!mVoxelGrid[v.x][v.y][v.z]) {
     ++mVoxelCount;
@@ -321,16 +348,16 @@ void RTVE::SVDAGModel::drawLine2(uint8_t pDominantAxisIndex, float pDominantAxis
     float plane1 = voxelPos.x + std::max(0.f, glm::sign(pDirInv.x));
     float plane2 = voxelPos.y + std::max(0.f, glm::sign(pDirInv.y));
 
-    // if (plane1 == pEnd.x && plane2 == pEnd.y) { // If the destination point lies exactly on the planes
-    //   voxelPos += glm::sign(pDirInv);
-    //   v = glm::floor(toVec3(pDominantAxisValue, voxelPos.x, voxelPos.y, pDominantAxisIndex));
-    //   if (!mVoxelGrid[v.x][v.y][v.z]) {
-    //     ++mVoxelCount;
-    //     insert(v, {glm::vec4(redValue, 0, 0, 0)});
-    //     mVoxelGrid[v.x][v.y][v.z] = true;
-    //   }
-    //   break;
-    // }
+    if (plane1 == pEnd.x && plane2 == pEnd.y) { // If the destination point lies exactly on the planes
+      voxelPos += glm::sign(pDirInv);
+      v = glm::floor(toVec3(pDominantAxisValue, voxelPos.x, voxelPos.y, pDominantAxisIndex));
+      if (!mVoxelGrid[v.x][v.y][v.z]) {
+        ++mVoxelCount;
+        insert(v, {glm::vec4(1, 1, 1, 0)});
+        mVoxelGrid[v.x][v.y][v.z] = true;
+      }
+      break;
+    }
     
     float t1 = (plane1 - pStart.x) * pDirInv.x;
     float t2 = (plane2 - pStart.y) * pDirInv.y;
@@ -343,11 +370,7 @@ void RTVE::SVDAGModel::drawLine2(uint8_t pDominantAxisIndex, float pDominantAxis
     v = glm::floor(toVec3(pDominantAxisValue, voxelPos.x, voxelPos.y, pDominantAxisIndex));
     if (!mVoxelGrid[v.x][v.y][v.z]) {
       ++mVoxelCount;
-      // insert(v, {glm::vec4(redValue, 0, 0, 0)});
       insert(v, {glm::vec4(1, 1, 1, 0)});
-      redValue += 0.3f;
-      if (redValue > 1.f)
-        redValue = 0.f;
       mVoxelGrid[v.x][v.y][v.z] = true;
     }
   }

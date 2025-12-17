@@ -123,7 +123,7 @@ void RTVE::Camera::attachSparseVoxelDAG(SparseVoxelDAG* pSVDAG) {
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, mSVDAGindicesSSBO);
   glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, mSVDAGindicesSSBO);
   // Fill buffer
-  glBufferData(GL_SHADER_STORAGE_BUFFER, pSVDAG->mIndices.size() * (8*sizeof(uint)), &pSVDAG->mIndices.at(0), GL_STATIC_DRAW);
+  glBufferData(GL_SHADER_STORAGE_BUFFER, pSVDAG->mIndices.size() * (8*sizeof(uint32_t)), &pSVDAG->mIndices.at(0), GL_STATIC_DRAW);
   // Unbind buffer
   glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, mSVDAGindicesSSBO);
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);

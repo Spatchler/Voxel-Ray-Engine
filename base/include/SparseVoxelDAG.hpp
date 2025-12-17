@@ -25,6 +25,7 @@ namespace RTVE {
   class SparseVoxelDAG {
   public:
     SparseVoxelDAG(uint pSize);
+    SparseVoxelDAG(const std::string& pPath);
 
     void insert(const glm::vec3& pPoint, const VoxelData& pData);
 
@@ -41,9 +42,11 @@ namespace RTVE {
     void generateDebugMesh();
     void releaseDebugMesh();
 
-    std::vector<std::array<uint, 8>> mIndices;
+    std::vector<std::array<uint32_t, 8>> mIndices;
     std::vector<VoxelData> mData;
   protected:
+    void loadFromFile(const std::string& pPath);
+
     void insertImpl(const glm::vec3& pPoint, const uint& pData, uint pNodeIndex, uint pNodeSize, glm::vec3 pNodeOrigin);
 
     void insertCubeVerticesImpl(std::vector<glm::vec3>& pVertices, uint pNodeSize, glm::vec3 pNodeOrigin, uint pNodeIndex);

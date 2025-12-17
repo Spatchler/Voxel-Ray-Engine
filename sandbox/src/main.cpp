@@ -1,6 +1,6 @@
 #include "RTVE.hpp"
 
-#define SVDAG_SIZE 512
+#define SVDAG_SIZE 128
 
 int main() {
   RTVE::Window& window = RTVE::Window::get();
@@ -10,29 +10,18 @@ int main() {
 
   RTVE::Camera camera;
 
-  // RTVE::SparseVoxelDAG world(SVDAG_SIZE);
-
-  // world.mData.push_back({glm::vec4(0.1, 0.1, 0.1, 1)}); // Air - background color
-
-  // for (int x = -SVDAG_SIZE; x < SVDAG_SIZE / 2.f; ++x) {
-  //   for (int y = -SVDAG_SIZE; y < SVDAG_SIZE / 2.f; ++y) {
-  //     for (int z = -SVDAG_SIZE; z < SVDAG_SIZE / 2.f; ++z) {
-  //       if (std::sqrtf(x*x + z*z + y*y) < SVDAG_SIZE / 2.f)
-  //         world.insert(glm::vec3(x + SVDAG_SIZE / 2.f, y + SVDAG_SIZE / 2.f, z + SVDAG_SIZE / 2.f), {glm::vec4(1, 1, 1, 0)});
-  //     }
-  //   }
-  // }
-  // world.generateDebugMesh();
-
   // RTVE::SVDAGModel model("sandbox/res/HollowKnight.obj", SVDAG_SIZE);
   // RTVE::SVDAGModel model("sandbox/res/models/tyra.obj", SVDAG_SIZE);
   // RTVE::SVDAGModel model("sandbox/res/models/bunny.obj", SVDAG_SIZE);
   // RTVE::SVDAGModel model("sandbox/res/models/dragon.obj", SVDAG_SIZE);
-  RTVE::SVDAGModel model("sandbox/res/models/sponza/sponza.obj", SVDAG_SIZE);
+  // RTVE::SVDAGModel model("sandbox/res/models/sponza/sponza.obj", SVDAG_SIZE);
   // RTVE::SVDAGModel model("sandbox/res/GreenPlayer.obj", SVDAG_SIZE);
-  // model.mData.push_back({glm::vec4(0.1, 0.1, 0.1, 1)}); // Air - background color
-  model.generateDebugMesh();
-  model.generateModelDebugMesh();
+  RTVE::SparseVoxelDAG model("sandbox/res/outS.bin");
+  model.mData.push_back({glm::vec4(0.1, 0.1, 0.1, 0)}); // Air - background color
+  model.mData.push_back({glm::vec4(1, 1, 1, 0)}); // Block colour
+  // model.print();
+  // model.generateDebugMesh();
+  // model.generateModelDebugMesh();
   camera.attachSparseVoxelDAG(&model);
   
   camera.mPos = glm::vec3(0, 0, 0);
@@ -116,7 +105,6 @@ int main() {
   }
 
   model.releaseDebugMesh();
-  model.releaseModelDebugMesh();
-  // world.releaseDebugMesh();
+  // model.releaseModelDebugMesh();
 }
 
