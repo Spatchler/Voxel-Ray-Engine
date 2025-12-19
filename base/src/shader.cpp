@@ -1,10 +1,10 @@
 #include "shader.hpp"
 
-RTVE::Shader::Shader(const char* pVertexPath, const char* pFragPath) {
+RTVE::Shader::Shader(const std::string& pVertexPath, const std::string& pFragPath) {
   load(pVertexPath, pFragPath);
 }
 
-void RTVE::Shader::load(const char* pVertexPath, const char* pFragPath) {
+void RTVE::Shader::load(const std::string& pVertexPath, const std::string& pFragPath) {
   std::string vCode;
   std::string fCode;
   std::ifstream vShaderFile;
@@ -65,70 +65,70 @@ uint RTVE::Shader::getID() {
 
 // ------------------------------------------------------------------------
 
-void RTVE::Shader::setBool(const std::string &name, bool value) const {         
-    use();
-    glUniform1i(glGetUniformLocation(mID, name.c_str()), (int)value); 
+void RTVE::Shader::setBool(const std::string& name, bool value) const {
+  use();
+  glUniform1i(glGetUniformLocation(mID, name.c_str()), (int)value);
 }
-void RTVE::Shader::setInt(const std::string &name, int value) const {
-    use();
-    glUniform1i(glGetUniformLocation(mID, name.c_str()), value); 
+void RTVE::Shader::setInt(const std::string& name, int value) const {
+  use();
+  glUniform1i(glGetUniformLocation(mID, name.c_str()), value);
 }
-void RTVE::Shader::setFloat(const std::string &name, float value) const {
-    use();
-    glUniform1f(glGetUniformLocation(mID, name.c_str()), value); 
-}
-
-// ------------------------------------------------------------------------
-
-void RTVE::Shader::setVec2(const std::string &name, const glm::vec2 &value) const {
-    use();
-    glUniform2fv(glGetUniformLocation(mID, name.c_str()), 1, &value[0]); 
-}
-void RTVE::Shader::setVec2(const std::string &name, float x, float y) const {
-    use();
-    glUniform2f(glGetUniformLocation(mID, name.c_str()), x, y); 
+void RTVE::Shader::setFloat(const std::string& name, float value) const {
+  use();
+  glUniform1f(glGetUniformLocation(mID, name.c_str()), value);
 }
 
 // ------------------------------------------------------------------------
 
-void RTVE::Shader::setVec3(const std::string &name, const glm::vec3 &value) const {
-    use();
-    glUniform3fv(glGetUniformLocation(mID, name.c_str()), 1, &value[0]); 
+void RTVE::Shader::setVec2(const std::string& name, const glm::vec2& value) const {
+  use();
+  glUniform2fv(glGetUniformLocation(mID, name.c_str()), 1, &value[0]); 
 }
-void RTVE::Shader::setVec3(const std::string &name, float x, float y, float z) const {
-    use();
-    glUniform3f(glGetUniformLocation(mID, name.c_str()), x, y, z); 
-}
-
-// ------------------------------------------------------------------------
-
-void RTVE::Shader::setVec4(const std::string &name, const glm::vec4 &value) const {
-    use();
-    glUniform4fv(glGetUniformLocation(mID, name.c_str()), 1, &value[0]); 
-}
-void RTVE::Shader::setVec4(const std::string &name, float x, float y, float z, float w) const {
-    use();
-    glUniform4f(glGetUniformLocation(mID, name.c_str()), x, y, z, w); 
+void RTVE::Shader::setVec2(const std::string& name, float x, float y) const {
+  use();
+  glUniform2f(glGetUniformLocation(mID, name.c_str()), x, y); 
 }
 
 // ------------------------------------------------------------------------
 
-void RTVE::Shader::setMat2(const std::string &name, const glm::mat2 &mat) const { 
-    use();
-    glUniformMatrix2fv(glGetUniformLocation(mID, name.c_str()), 1, GL_FALSE, &mat[0][0]);
+void RTVE::Shader::setVec3(const std::string& name, const glm::vec3& value) const {
+  use();
+  glUniform3fv(glGetUniformLocation(mID, name.c_str()), 1, &value[0]); 
 }
-void RTVE::Shader::setMat3(const std::string &name, const glm::mat3 &mat) const {
-    use();
-    glUniformMatrix3fv(glGetUniformLocation(mID, name.c_str()), 1, GL_FALSE, &mat[0][0]);
-}
-void RTVE::Shader::setMat4(const std::string &name, const glm::mat4 &mat) const {
-    use();
-    glUniformMatrix4fv(glGetUniformLocation(mID, name.c_str()), 1, GL_FALSE, &mat[0][0]);
+void RTVE::Shader::setVec3(const std::string& name, float x, float y, float z) const {
+  use();
+  glUniform3f(glGetUniformLocation(mID, name.c_str()), x, y, z); 
 }
 
 // ------------------------------------------------------------------------
 
-void RTVE::Shader::checkCompileErrors(GLuint pShader, std::string pType) {
+void RTVE::Shader::setVec4(const std::string& name, const glm::vec4& value) const {
+  use();
+  glUniform4fv(glGetUniformLocation(mID, name.c_str()), 1, &value[0]); 
+}
+void RTVE::Shader::setVec4(const std::string& name, float x, float y, float z, float w) const {
+  use();
+  glUniform4f(glGetUniformLocation(mID, name.c_str()), x, y, z, w); 
+}
+
+// ------------------------------------------------------------------------
+
+void RTVE::Shader::setMat2(const std::string& name, const glm::mat2& mat) const { 
+  use();
+  glUniformMatrix2fv(glGetUniformLocation(mID, name.c_str()), 1, GL_FALSE, &mat[0][0]);
+}
+void RTVE::Shader::setMat3(const std::string& name, const glm::mat3& mat) const {
+  use();
+  glUniformMatrix3fv(glGetUniformLocation(mID, name.c_str()), 1, GL_FALSE, &mat[0][0]);
+}
+void RTVE::Shader::setMat4(const std::string& name, const glm::mat4& mat) const {
+  use();
+  glUniformMatrix4fv(glGetUniformLocation(mID, name.c_str()), 1, GL_FALSE, &mat[0][0]);
+}
+
+// ------------------------------------------------------------------------
+
+void RTVE::Shader::checkCompileErrors(GLuint pShader, const std::string& pType) {
   GLint success;
   GLchar infoLog[1024];
   if (pType != "PROGRAM") {

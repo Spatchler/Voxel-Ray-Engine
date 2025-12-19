@@ -2,6 +2,7 @@
 
 #include "window.hpp"
 #include "shader.hpp"
+#include "computeShader.hpp"
 #include "SparseVoxelDAG.hpp"
 
 namespace RTVE {
@@ -43,9 +44,13 @@ namespace RTVE {
     glm::vec2 mHalfResolutionInv;
     glm::mat4 mProjection;
 
+    glm::ivec2 mScreenSize;
+
     SparseVoxelDAG* mAttachedSVDAG;
     
-    Shader mSVDAGShader;
+    ComputeShader mSVDAGShader;
+    Shader mScreenShader;
+    uint mComputeTexture;
     uint mScreenVAO, mScreenVBO;
     uint mSVDAGindicesSSBO, mSVDAGdataSSBO;
 #ifdef _DEBUG

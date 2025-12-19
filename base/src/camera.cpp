@@ -1,14 +1,16 @@
 #include "camera.hpp"
 
 RTVE::Camera::Camera()
-:mSVDAGShader("base/shaders/rtvShader.vs", "base/shaders/rtvShader.fs"), mDebugShader("base/shaders/debugShader.vs", "base/shaders/debugShader.fs"), mWorldUp(0, 1, 0), mPos(0, 0, 0) {
-  float vertices[] {
-    -1.0f,  1.0f,
-    -1.0f, -1.0f,
-     1.0f,  1.0f,
-     1.0f, -1.0f
+:mSVDAGShader("base/shaders/rtvShader.cs"), mScreenShader("base/shaders/textureShader.vs", "base/shaders/textureShader.fs"), mDebugShader("base/shaders/debugShader.vs", "base/shaders/debugShader.fs"), mWorldUp(0, 1, 0), mPos(0, 0, 0) {
+  float vertices[] = {
+    // positions  // texture coords
+    -1.0f,  1.0f, 0.0f, 1.0f,
+    -1.0f, -1.0f, 0.0f, 0.0f,
+     1.0f,  1.0f, 1.0f, 1.0f,
+     1.0f, -1.0f, 1.0f, 0.0f,
   };
 
+  // Create screen VAO and VBO
   glGenVertexArrays(1, &mScreenVAO);
   glGenBuffers(1, &mScreenVBO);
   
@@ -18,12 +20,27 @@ RTVE::Camera::Camera()
   glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
   glEnableVertexAttribArray(0);
-  glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 2, (void*)0);
+  glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 4, (void*)0);
+
+  glEnableVertexAttribArray(1);
+  glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 4, (void*)(2 * sizeof(float)));
 
   glBindVertexArray(0);
 
   mInverseNear = 1.f/mNear;
   mInverseFrustumDepth = 1.f/(1.f/mFar - mInverseNear);
+
+  // Create compute shader texture
+  glGenTextures(1, &mComputeTexture);
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_2D, mComputeTexture);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, 512, 512, 0, GL_RGBA, GL_FLOAT, NULL);
+  
+  glBindImageTexture(0, mComputeTexture, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
 }
 
 void RTVE::Camera::setDirection(float pYaw, float pPitch) {
@@ -67,8 +84,16 @@ void RTVE::Camera::moveRight(float pSpeed) {
 }
 
 void RTVE::Camera::updateViewportSize(const glm::vec2& pSize) {
+  mScreenSize = pSize;
   mProjection = glm::perspective(glm::radians(45.0f), pSize.x / pSize.y, mNear, mFar);
   mHalfResolutionInv = 2.f / pSize;
+
+  // Update compute texture parameters
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_2D, mComputeTexture);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, mScreenSize.x, mScreenSize.y, 0, GL_RGBA, GL_FLOAT, NULL);
+  
+  glBindImageTexture(0, mComputeTexture, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
 }
 
 void RTVE::Camera::render() {
@@ -90,7 +115,17 @@ void RTVE::Camera::render() {
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, mSVDAGdataSSBO);
   glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, mSVDAGdataSSBO);
 
-  // Render
+  // Dispatch compute
+  glDispatchCompute(mScreenSize.x / 30, mScreenSize.y / 30, 1);
+  glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+
+  // Bind texture
+  mScreenShader.use();
+  mScreenShader.setInt("tex", 0);
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_2D, mComputeTexture);
+
+  // Render quad
   glBindVertexArray(mScreenVAO);
   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
   glBindVertexArray(0);

@@ -17,6 +17,7 @@ int main() {
   // RTVE::SVDAGModel model("sandbox/res/models/sponza/sponza.obj", SVDAG_SIZE);
   // RTVE::SVDAGModel model("sandbox/res/GreenPlayer.obj", SVDAG_SIZE);
   RTVE::SparseVoxelDAG model("sandbox/res/outS.bin");
+  // RTVE::SparseVoxelDAG model("sandbox/res/highres.bin");
   model.mData.push_back({glm::vec4(0.1, 0.1, 0.1, 0)}); // Air - background color
   model.mData.push_back({glm::vec4(1, 1, 1, 0)}); // Block colour
   // model.print();
