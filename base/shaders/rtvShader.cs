@@ -35,8 +35,8 @@ void main() {
   float depth = 0;
   float advanceCount = 0;
   uint index = traverse(uCamPos, direction, directionInv, normal, depth, advanceCount);
-  // gl_FragDepth = ((1/depth) - uInverseNear) * uInverseFrustumDepth;
   VoxelData v = data[index];
+  v.color.a = ((1/depth) - uInverseNear) * uInverseFrustumDepth;
   if (index == 0) {
     imageStore(imgOutput, ivec2(gl_GlobalInvocationID.xy), v.color);
     return;
@@ -59,7 +59,6 @@ void main() {
   // v.color.g = 0;
   // v.color.b = 0;
 
-  v.color.a = depth;
   imageStore(imgOutput, ivec2(gl_GlobalInvocationID.xy), v.color);
 }
 
@@ -92,9 +91,20 @@ vec3 advanceRay(vec3 pOrigin, vec3 pDirection, vec3 pDirectionInv, vec3 pNodeOri
 
   vec3 pos = {0, 0, 0};
 
-  pos.x = max((pDirection.x * tmin + pOrigin.x) * float(tmin != tx), planeX * float(tmin == tx));
-  pos.y = max((pDirection.y * tmin + pOrigin.y) * float(tmin != ty), planeY * float(tmin == ty));
-  pos.z = max((pDirection.z * tmin + pOrigin.z) * float(tmin != tz), planeZ * float(tmin == tz));
+  if (tmin == tx)
+    pos.x = planeX;
+  else
+    pos.x = pDirection.x * tmin + pOrigin.x;
+
+  if (tmin == ty)
+    pos.y = planeY;
+  else
+    pos.y = pDirection.y * tmin + pOrigin.y;
+
+  if (tmin == tz)
+    pos.z = planeZ;
+  else
+    pos.z = pDirection.z * tmin + pOrigin.z;
 
   pNormal.x = int(sign(pDirectionInv.x)) * -int(pos.x == planeX);
   pNormal.y = int(sign(pDirectionInv.y)) * -int(pos.y == planeY);
@@ -125,12 +135,29 @@ vec3 aabbIntersection(vec3 pOrigin, vec3 pDirection, vec3 pDirectionInv, float p
   tmax = min(tmax, max(tz1, tz2));
 
   if (tmin >= 0 && tmax >= tmin) {
-    // vec3 pos = {pDirection.x * tmin + pOrigin.x, pDirection.y * tmin + pOrigin.y, pDirection.z * tmin + pOrigin.z}; // Calculate intersection
-    vec3 pos = {0, 0, 0};
+    vec3 pos = {pDirection.x * tmin + pOrigin.x, pDirection.y * tmin + pOrigin.y, pDirection.z * tmin + pOrigin.z}; // Calculate intersection
+    // vec3 pos = {0, 0, 0};
 
-    pos.x = max((pDirection.x * tmin + pOrigin.x) * float(tmin != tx1 && tmin != tx2), max(pMin * float(tmin == tx1), pMax * float(tmin == tx2)));
-    pos.y = max((pDirection.y * tmin + pOrigin.y) * float(tmin != ty1 && tmin != ty2), max(pMin * float(tmin == ty1), pMax * float(tmin == ty2)));
-    pos.z = max((pDirection.z * tmin + pOrigin.z) * float(tmin != tz1 && tmin != tz2), max(pMin * float(tmin == tz1), pMax * float(tmin == tz2)));
+    // if (tmin != tx1 && tmin != tx1)
+    //   pos.x = pDirection.x * tmin + pOrigin.x;
+    // else if (tmin == tx1)
+    //   pos.x = pMin;
+    // else
+    //   pos.x = pMax;
+
+    // if (tmin != ty1 && tmin != ty1)
+    //   pos.y = pDirection.y * tmin + pOrigin.y;
+    // else if (tmin == ty1)
+    //   pos.y = pMin;
+    // else
+    //   pos.y = pMax;
+
+    // if (tmin != tz1 && tmin != tz1)
+    //   pos.z = pDirection.z * tmin + pOrigin.z;
+    // else if (tmin == tz1)
+    //   pos.z = pMin;
+    // else
+    //   pos.z = pMax;
 
     pos.x = max(0.f, min(uSVDAGSize, pos.x));
     pos.y = max(0.f, min(uSVDAGSize, pos.y));
@@ -155,7 +182,7 @@ vec3 aabbIntersection(vec3 pOrigin, vec3 pDirection, vec3 pDirectionInv, float p
 
 uint traverse(vec3 pOrigin, vec3 pDirection, vec3 pDirectionInv, inout ivec3 pNormal, inout float pDepth, inout float pAdvanceCount) {
   if (pOrigin.x > uSVDAGSize || pOrigin.x < 0 || pOrigin.y > uSVDAGSize || pOrigin.y < 0 || pOrigin.z > uSVDAGSize || pOrigin.z < 0) {
-    // Ray origin not inside the SVO, carry out aabb intersection
+    // Ray origin not inside the grid, carry out aabb intersection
     pOrigin = aabbIntersection(pOrigin, pDirection, pDirectionInv, 0, uSVDAGSize, pNormal, pDepth);
     if (pOrigin.x < 0) // pOrigin == vec3(-1, -1, -1)
       return 0;
@@ -205,9 +232,23 @@ uint traverse(vec3 pOrigin, vec3 pDirection, vec3 pDirectionInv, inout ivec3 pNo
     // pos.z = min(1.f, float(pos.z > currentNodeSize) + min(0.f, sign(pDirectionInv.z)) * float(pos.z == currentNodeSize) );
     // nodeOrigin += pos * currentNodeSize;
     pos /= currentNodeSize;
-    pos.x = max(0.0, min(1.0, floor(pos.x) + (min(0.f, sign(pDirectionInv.x)) * float(pos.x == 1))));
-    pos.y = max(0.0, min(1.0, floor(pos.y) + (min(0.f, sign(pDirectionInv.y)) * float(pos.y == 1))));
-    pos.z = max(0.0, min(1.0, floor(pos.z) + (min(0.f, sign(pDirectionInv.z)) * float(pos.z == 1))));
+    if (pos.x == 1)
+      pos.x = max(0.0, min(1.0, floor(pos.x) + min(0.f, sign(pDirectionInv.x))));
+    else
+      pos.x = max(0.0, min(1.0, floor(pos.x)));
+
+    if (pos.y == 1)
+      pos.y = max(0.0, min(1.0, floor(pos.y) + min(0.f, sign(pDirectionInv.y))));
+    else
+      pos.y = max(0.0, min(1.0, floor(pos.y)));
+
+    if (pos.z == 1)
+      pos.z = max(0.0, min(1.0, floor(pos.z) + min(0.f, sign(pDirectionInv.z))));
+    else
+      pos.z = max(0.0, min(1.0, floor(pos.z)));
+    // pos.x = max(0.0, min(1.0, floor(pos.x) + (min(0.f, sign(pDirectionInv.x)) * float(pos.x == 1))));
+    // pos.y = max(0.0, min(1.0, floor(pos.y) + (min(0.f, sign(pDirectionInv.y)) * float(pos.y == 1))));
+    // pos.z = max(0.0, min(1.0, floor(pos.z) + (min(0.f, sign(pDirectionInv.z)) * float(pos.z == 1))));
     nodeOrigin += pos * currentNodeSize;
     nodeIndex = indices[nodeIndex][toChildIndex(pos)];
   }
