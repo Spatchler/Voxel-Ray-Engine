@@ -10,13 +10,8 @@ int main() {
 
   RTVE::Camera camera;
 
-  // RTVE::SVDAGModel model("sandbox/res/HollowKnight.obj", SVDAG_SIZE);
-  // RTVE::SVDAGModel model("sandbox/res/models/tyra.obj", SVDAG_SIZE);
-  // RTVE::SVDAGModel model("sandbox/res/models/bunny.obj", SVDAG_SIZE);
-  // RTVE::SVDAGModel model("sandbox/res/models/dragon.obj", SVDAG_SIZE);
-  // RTVE::SVDAGModel model("sandbox/res/models/sponza/sponza.obj", SVDAG_SIZE);
-  // RTVE::SVDAGModel model("sandbox/res/GreenPlayer.obj", SVDAG_SIZE);
-  RTVE::SparseVoxelDAG model("sandbox/res/outS.bin");
+  // RTVE::SparseVoxelDAG model("sandbox/res/outS.bin");
+  RTVE::SparseVoxelDAG model("sandbox/res/test.bin");
   // RTVE::SparseVoxelDAG model("sandbox/res/highres.bin");
   model.mData.push_back({glm::vec4(0.1, 0.1, 0.1, 0)}); // Air - background color
   model.mData.push_back({glm::vec4(1, 1, 1, 0)}); // Block colour
@@ -54,7 +49,7 @@ int main() {
   window.framebufferSizeCallback = [&camera](glm::vec2 pSize) {
     camera.updateViewportSize(pSize);
   };
-  camera.updateViewportSize(window.getSize());
+  // camera.updateViewportSize(window.getSize());
 
   float deltaTime, lastFrame, lastTimeFPSPrinted = 0.f;
   uint frames = 0;
