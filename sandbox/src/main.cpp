@@ -11,13 +11,14 @@ int main() {
   RTVE::Camera camera;
 
   // RTVE::SparseVoxelDAG model("sandbox/res/outS.bin");
-  RTVE::SparseVoxelDAG model("sandbox/res/test.bin");
+  // RTVE::SparseVoxelDAG model("sandbox/res/test.bin");
+  RTVE::SparseVoxelDAG model("sandbox/res/testC.bin");
   // RTVE::SparseVoxelDAG model("sandbox/res/highres.bin");
   model.mData.push_back({glm::vec4(0.1, 0.1, 0.1, 0)}); // Air - background color
   model.mData.push_back({glm::vec4(1, 1, 1, 0)}); // Block colour
+  std::println("HI: {}", model.mIndices.size());
   // model.print();
-  // model.generateDebugMesh();
-  // model.generateModelDebugMesh();
+  model.generateDebugMesh();
   camera.attachSparseVoxelDAG(&model);
   
   camera.mPos = glm::vec3(0, 0, 0);
@@ -101,6 +102,5 @@ int main() {
   }
 
   model.releaseDebugMesh();
-  // model.releaseModelDebugMesh();
 }
 

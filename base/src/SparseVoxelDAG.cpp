@@ -23,14 +23,6 @@ void RTVE::SparseVoxelDAG::insert(const glm::vec3& pPoint, const VoxelData& pDat
   insertImpl(pPoint, index, 0, mSize, glm::vec3(0, 0, 0));
 }
 
-uint RTVE::SparseVoxelDAG::getSize() {
-  return mSize;
-}
-
-uint RTVE::SparseVoxelDAG::getMidpoint() {
-  return mMidpoint;
-}
-
 void RTVE::SparseVoxelDAG::print() {
   std::println("\n------------------------------------");
   std::println("Indices:");
@@ -123,6 +115,7 @@ void RTVE::SparseVoxelDAG::loadFromFile(const std::string& pPath) {
   uint resolution;
   fin.read(reinterpret_cast<char*>(&resolution), 4);
   mSize = resolution;
+  mMaxDepth = std::log2(mSize);
 
   // Load indices
   mIndices.clear();

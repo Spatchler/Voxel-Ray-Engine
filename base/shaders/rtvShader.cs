@@ -1,10 +1,15 @@
 #version 460 core
 // layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
 layout (local_size_x = 30, local_size_y = 30, local_size_z = 1) in;
-layout (rgba32f, binding = 0) uniform image2D imgOutput;
+layout (rgba32f, binding = 0) uniform image2D imgOut;
 
 struct VoxelData {
   vec4 color;
+};
+
+struct Node {
+  vec3 origin;
+  uint index;
 };
 
 layout (std430, binding = 0) readonly buffer SVDAGindices {
@@ -34,11 +39,12 @@ void main() {
   ivec3 normal = {0, 0, 0};
   float depth = 0;
   float advanceCount = 0;
+
   uint index = traverse(uCamPos, direction, directionInv, normal, depth, advanceCount);
   VoxelData v = data[index];
   v.color.a = ((1/depth) - uInverseNear) * uInverseFrustumDepth;
   if (index == 0) {
-    imageStore(imgOutput, ivec2(gl_GlobalInvocationID.xy), v.color);
+    imageStore(imgOut, ivec2(gl_GlobalInvocationID.xy), v.color);
     return;
   }
   vec3 light = {0.5, 0.1, 0.76};
@@ -55,11 +61,12 @@ void main() {
   // v.color.b = (normal.z + 1) / 2;
 
   // Advance count
+  // v.color.r = advanceCount / 200.f;
   // v.color.r = advanceCount / 100.f;
   // v.color.g = 0;
   // v.color.b = 0;
 
-  imageStore(imgOutput, ivec2(gl_GlobalInvocationID.xy), v.color);
+  imageStore(imgOut, ivec2(gl_GlobalInvocationID.xy), v.color);
 }
 
 vec3 getDirection() {
@@ -195,18 +202,20 @@ uint traverse(vec3 pOrigin, vec3 pDirection, vec3 pDirectionInv, inout ivec3 pNo
       return 0; // If ray has gone outside the tree return 0
   }
 
-  uint nodeIndex = 0;
-  vec3 nodeOrigin = {0, 0, 0};
+  Node currentNode;
+  currentNode.origin = vec3(0, 0, 0);
+  currentNode.index = 0;
   uint currentNodeSize = uSVDAGSize;
+  uint depth = 0;
   for (;;) {
     // Return if the node is a leaf and is not air
-    if (nodeIndex > uMidpoint)
-      return nodeIndex - uMidpoint;
+    if (currentNode.index > uMidpoint)
+      return currentNode.index - uMidpoint;
 
     // Advance ray if voxel is air
-    if (nodeIndex == uMidpoint) {
+    if (currentNode.index == uMidpoint) {
       // ++pAdvanceCount;
-      pOrigin = advanceRay(pOrigin, pDirection, pDirectionInv, nodeOrigin, currentNodeSize, pNormal, pDepth);
+      pOrigin = advanceRay(pOrigin, pDirection, pDirectionInv, currentNode.origin, currentNodeSize, pNormal, pDepth);
       if ((pOrigin.x <= 0 && pDirection.x < 0) ||
           (pOrigin.x >= uSVDAGSize && pDirection.x > 0) ||
           (pOrigin.y <= 0 && pDirection.y < 0) ||
@@ -216,8 +225,9 @@ uint traverse(vec3 pOrigin, vec3 pDirection, vec3 pDirectionInv, inout ivec3 pNo
         pDepth = uFar;
         return 0; // If ray has gone outside the tree return 0
       }
-      nodeIndex = 0; // Go back to the top of the tree
-      nodeOrigin = vec3(0, 0, 0);
+      depth = 0;
+      currentNode.index = 0;
+      currentNode.origin = vec3(0, 0, 0);
       currentNodeSize = uSVDAGSize;
       continue;
     }
@@ -226,7 +236,7 @@ uint traverse(vec3 pOrigin, vec3 pDirection, vec3 pDirectionInv, inout ivec3 pNo
     ++pAdvanceCount;
     currentNodeSize = currentNodeSize >> 1; // Divide current node size by 2
     vec3 pos = pOrigin;
-    pos -= nodeOrigin;
+    pos -= currentNode.origin;
     // pos.x = min(1.f, float(pos.x > currentNodeSize) + min(0.f, sign(pDirectionInv.x)) * float(pos.x == currentNodeSize) );
     // pos.y = min(1.f, float(pos.y > currentNodeSize) + min(0.f, sign(pDirectionInv.y)) * float(pos.y == currentNodeSize) );
     // pos.z = min(1.f, float(pos.z > currentNodeSize) + min(0.f, sign(pDirectionInv.z)) * float(pos.z == currentNodeSize) );
@@ -249,8 +259,11 @@ uint traverse(vec3 pOrigin, vec3 pDirection, vec3 pDirectionInv, inout ivec3 pNo
     // pos.x = max(0.0, min(1.0, floor(pos.x) + (min(0.f, sign(pDirectionInv.x)) * float(pos.x == 1))));
     // pos.y = max(0.0, min(1.0, floor(pos.y) + (min(0.f, sign(pDirectionInv.y)) * float(pos.y == 1))));
     // pos.z = max(0.0, min(1.0, floor(pos.z) + (min(0.f, sign(pDirectionInv.z)) * float(pos.z == 1))));
-    nodeOrigin += pos * currentNodeSize;
-    nodeIndex = indices[nodeIndex][toChildIndex(pos)];
+    Node n;
+    n.origin = currentNode.origin + (pos * currentNodeSize);
+    n.index = indices[currentNode.index][toChildIndex(pos)];
+    currentNode = n;
+    ++depth;
   }
   return 0;
 }

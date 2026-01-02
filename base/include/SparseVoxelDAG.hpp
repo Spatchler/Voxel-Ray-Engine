@@ -29,8 +29,9 @@ namespace RTVE {
 
     void insert(const glm::vec3& pPoint, const VoxelData& pData);
 
-    uint getSize();
-    uint getMidpoint();
+    constexpr uint getSize() { return mSize; }
+    constexpr uint getMidpoint() { return mMidpoint; }
+    constexpr uint getMaxDepth() { return mMaxDepth; }
 
     void print();
 

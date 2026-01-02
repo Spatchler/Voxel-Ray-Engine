@@ -6,6 +6,11 @@
 #include "SparseVoxelDAG.hpp"
 
 namespace RTVE {
+  struct Node {
+    glm::vec3 origin;
+    uint index;
+  };
+
   class Camera {
   public:
     Camera();
@@ -34,6 +39,7 @@ namespace RTVE {
     glm::vec3 mPos;
   private:
     void updateVectors();
+
     glm::vec3 mFront, mUp, mRight, mWorldUp = {0, 0, 0};
     float mYaw, mPitch = 0.f;
 
@@ -46,7 +52,7 @@ namespace RTVE {
 
     glm::ivec2 mScreenSize;
 
-    SparseVoxelDAG* mAttachedSVDAG;
+    SparseVoxelDAG* mSVDAG;
     
     ComputeShader mSVDAGShader;
     Shader mScreenShader;
