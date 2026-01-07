@@ -35,7 +35,7 @@ namespace RTVE {
     void attachSparseVoxelDAG(SparseVoxelDAG* pSVDAG);
 
     ~Camera();
-    
+
     glm::vec3 mPos;
   private:
     void updateVectors();
@@ -52,13 +52,17 @@ namespace RTVE {
 
     glm::ivec2 mScreenSize;
 
-    SparseVoxelDAG* mSVDAG;
-    
+    std::vector<SparseVoxelDAG*> mSVDAGs;
+    std::vector<uint32_t> mDepthMap;
+    std::vector<uint32_t> mSVDAGMetadata;
+
     ComputeShader mSVDAGShader;
     Shader mScreenShader;
     uint mComputeTexture;
     uint mScreenVAO, mScreenVBO;
-    uint mSVDAGindicesSSBO, mSVDAGdataSSBO;
+    uint mIndicesBufferSize = 0, mDataBufferSize = 0, mMetadataBufferSize = 0, mDepthMapSize;
+    uint mIndicesBufferSizeBytes = 0, mDataBufferSizeBytes = 0, mMetadataBufferSizeBytes = 0;
+    uint mSVDAGindicesSSBO, mSVDAGdataSSBO, mDepthMapSSBO, mMetadataSSBO;
 #ifdef _DEBUG
     Shader mDebugShader;
 #endif

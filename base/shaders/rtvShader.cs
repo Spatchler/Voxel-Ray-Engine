@@ -13,19 +13,23 @@ struct Node {
 };
 
 layout (std430, binding = 0) readonly buffer SVDAGindices {
-  uint indices[][8];
+  uint bIndices[][8];
 };
 layout (std430, binding = 1) readonly buffer SVDAGdata {
-  VoxelData data[];
+  VoxelData bData[];
+};
+layout (std430, binding = 2) readonly buffer DepthMap {
+  uint bDepthMap[];
+};
+layout (std430, binding = 3) readonly buffer Metadata {
+  uint bMetadata[];
 };
 
-uniform int uMidpoint;
 uniform vec3 uCamPos;
 uniform mat4 uProjViewInv;
 uniform float uInverseNear;
 uniform float uInverseFrustumDepth;
 uniform float uFar;
-uniform int uSVDAGSize;
 uniform vec2 uHalfResolutionInv;
 
 vec3 getDirection();
@@ -41,7 +45,7 @@ void main() {
   float advanceCount = 0;
 
   uint index = traverse(uCamPos, direction, directionInv, normal, depth, advanceCount);
-  VoxelData v = data[index];
+  VoxelData v = bData[index];
   v.color.a = ((1/depth) - uInverseNear) * uInverseFrustumDepth;
   if (index == 0) {
     imageStore(imgOut, ivec2(gl_GlobalInvocationID.xy), v.color);
@@ -261,7 +265,7 @@ uint traverse(vec3 pOrigin, vec3 pDirection, vec3 pDirectionInv, inout ivec3 pNo
     // pos.z = max(0.0, min(1.0, floor(pos.z) + (min(0.f, sign(pDirectionInv.z)) * float(pos.z == 1))));
     Node n;
     n.origin = currentNode.origin + (pos * currentNodeSize);
-    n.index = indices[currentNode.index][toChildIndex(pos)];
+    n.index = bIndices[currentNode.index][toChildIndex(pos)];
     currentNode = n;
     ++depth;
   }
