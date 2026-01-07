@@ -10,8 +10,26 @@ RTVE::SparseVoxelDAG::SparseVoxelDAG(const std::string& pPath)
   loadFromFile(pPath);
 }
 
+RTVE::SparseVoxelDAG::SparseVoxelDAG(const std::vector<std::vector<std::vector<bool>>>& pGrid)
+:mSize(pGrid.size()) {
+  std::vector<std::tuple<uint, uint, glm::vec3, uint>> queue;
+
+  {
+    uint i = generateSVDAGTopDown(pGrid, glm::vec3(0, 0, 0), mSize, queue);
+    if (i >= mMidpoint)
+      mIndices.push_back({mMidpoint, mMidpoint, mMidpoint, mMidpoint, mMidpoint, mMidpoint, mMidpoint, mMidpoint});
+  }
+  uint queueIndex = 0;
+
+  while (queueIndex < queue.size()) {
+    auto queueItem = queue.at(queueIndex);
+    mIndices.at(std::get<0>(queueItem)).at(std::get<1>(queueItem)) = generateSVDAGTopDown(pGrid, std::get<2>(queueItem), std::get<3>(queueItem), queue);
+    ++queueIndex;
+  }
+}
+
 void RTVE::SparseVoxelDAG::insert(const glm::vec3& pPoint, const VoxelData& pData) {
-  std::println("Inserting: {}, {}, {}", pPoint.x, pPoint.y, pPoint.z);
+  // std::println("Inserting: {}, {}, {}", pPoint.x, pPoint.y, pPoint.z);
   const auto result = std::find(std::begin(mData), std::end(mData), pData);
   uint index;
   if (result != mData.end())
@@ -135,6 +153,35 @@ void RTVE::SparseVoxelDAG::loadFromFile(const std::string& pPath) {
       i = 0;
     }
   }
+}
+
+uint RTVE::SparseVoxelDAG::generateSVDAGTopDown(const std::vector<std::vector<std::vector<bool>>>& pGrid, glm::vec3 pNodeOrigin, uint pNodeSize, std::vector<std::tuple<uint, uint, glm::vec3, uint>>& pQueue) {
+  bool allZero = true;
+  bool allOne = true;
+  uint volume = pNodeSize * pNodeSize * pNodeSize;
+
+  for (uint x = pNodeOrigin.x; x < pNodeOrigin.x + pNodeSize; ++x) {
+    for (uint y = pNodeOrigin.y; y < pNodeOrigin.y + pNodeSize; ++y) {
+      for (uint z = pNodeOrigin.z; z < pNodeOrigin.z + pNodeSize && (allOne || allZero); ++z) {
+        const bool& v = pGrid[x][y][z];
+        allZero = allZero && v == 0;
+        allOne = allOne && v == 1;
+      }
+    }
+  }
+
+  if (allZero)
+    return mMidpoint;
+  else if (allOne)
+    return mMidpoint + 1;
+
+  pNodeSize = pNodeSize >> 1;
+
+  mIndices.emplace_back();
+  for (uint i = 0; i < 8; ++i)
+    pQueue.push_back({mIndices.size()-1, i, pNodeOrigin + (float)pNodeSize * toPos(i), pNodeSize});
+
+  return mIndices.size() - 1;
 }
 
 void RTVE::SparseVoxelDAG::insertImpl(const glm::vec3& pPoint, const uint& pDataIndex, uint pNodeIndex, uint pNodeSize, glm::vec3 pNodeOrigin) {
