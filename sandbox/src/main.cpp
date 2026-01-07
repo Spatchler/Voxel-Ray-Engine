@@ -1,5 +1,7 @@
 #include "RTVE.hpp"
 
+#include "chunk.hpp"
+
 #define SVDAG_SIZE 128
 
 int main() {
@@ -12,14 +14,13 @@ int main() {
 
   // RTVE::SparseVoxelDAG model("sandbox/res/outS.bin");
   // RTVE::SparseVoxelDAG model("sandbox/res/test.bin");
-  RTVE::SparseVoxelDAG model("sandbox/res/testC.bin");
+  // RTVE::SparseVoxelDAG model("sandbox/res/testC.bin");
   // RTVE::SparseVoxelDAG model("sandbox/res/highres.bin");
-  model.mData.push_back({glm::vec4(0.1, 0.1, 0.1, 0)}); // Air - background color
-  model.mData.push_back({glm::vec4(1, 1, 1, 0)}); // Block colour
-  std::println("HI: {}", model.mIndices.size());
-  // model.print();
-  model.generateDebugMesh();
-  camera.attachSparseVoxelDAG(&model);
+
+  Chunk chunk(glm::vec3(0, 0, 0));
+
+  chunk.mSVDAG.generateDebugMesh();
+  camera.attachSparseVoxelDAG(&chunk.mSVDAG);
   
   camera.mPos = glm::vec3(0, 0, 0);
   camera.setDirection(0, 0);
@@ -101,6 +102,6 @@ int main() {
     }
   }
 
-  model.releaseDebugMesh();
+  chunk.mSVDAG.releaseDebugMesh();
 }
 
