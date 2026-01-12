@@ -8,8 +8,20 @@
 namespace RTVE {
   struct Node {
     glm::vec3 origin;
-    uint index;
+    uint32_t index;
   };
+
+  // Enabe tight packing
+  #pragma pack(1)
+  struct Metadata {
+    uint32_t indicesIndex, midpoint, size;
+    float paddingA;
+    glm::tvec3<float> translation;
+    float paddingB;
+    // uint8_t c[4]; // 8
+  };
+  // Reset packing
+  #pragma pack()
 
   class Camera {
   public:
@@ -53,16 +65,15 @@ namespace RTVE {
     glm::ivec2 mScreenSize;
 
     std::vector<SparseVoxelDAG*> mSVDAGs;
-    std::vector<uint32_t> mDepthMap;
-    std::vector<uint32_t> mSVDAGMetadata;
+    std::vector<Metadata> mSVDAGMetadata;
 
     ComputeShader mSVDAGShader;
     Shader mScreenShader;
     uint mComputeTexture;
     uint mScreenVAO, mScreenVBO;
-    uint mIndicesBufferSize = 0, mDataBufferSize = 0, mMetadataBufferSize = 0, mDepthMapSize;
+    uint mIndicesBufferSize = 0, mMetadataBufferSize = 0;
     uint mIndicesBufferSizeBytes = 0, mDataBufferSizeBytes = 0, mMetadataBufferSizeBytes = 0;
-    uint mSVDAGindicesSSBO, mSVDAGdataSSBO, mDepthMapSSBO, mMetadataSSBO;
+    uint mSVDAGindicesSSBO, mSVDAGdataSSBO, mMetadataSSBO;
 #ifdef _DEBUG
     Shader mDebugShader;
 #endif

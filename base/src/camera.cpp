@@ -45,29 +45,24 @@ RTVE::Camera::Camera()
   // Init SSBOs so they dont have to be reallocated
   mSVDAGShader.use();
   // Indices buffer
-  glBindAttribLocation(mSVDAGShader.getID(), 0, "SVDAGindices");
-  glGenBuffers(1, &mSVDAGindicesSSBO);
+  glBindAttribLocation(mSVDAGShader.getID(), 0, "SVDAGindicesSSBO");
+  glCreateBuffers(1, &mSVDAGindicesSSBO);
   {
-    std::vector<uint> data(1000000, 0);
+    std::vector<uint32_t> data(1000000, 0);
     glNamedBufferData(mSVDAGindicesSSBO, data.size() * sizeof(uint), &data.at(0), GL_DYNAMIC_DRAW);
   }
   // Data buffer
-  glBindAttribLocation(mSVDAGShader.getID(), 1, "SVDAGdata");
-  glGenBuffers(1, &mSVDAGdataSSBO);
+  glBindAttribLocation(mSVDAGShader.getID(), 1, "SVDAGdataSSBO");
+  glCreateBuffers(1, &mSVDAGdataSSBO);
   {
     std::vector<VoxelData> data(1000, {glm::vec4(0, 0, 0, 0)});
     glNamedBufferData(mSVDAGdataSSBO, data.size() * sizeof(VoxelData), &data.at(0), GL_DYNAMIC_DRAW);
   }
-  // Chunk Map buffer
-  glBindAttribLocation(mSVDAGShader.getID(), 2, "ChunkMap");
-  glGenBuffers(1, &mChunkMapSSBO);
-  mChunkMap = std::vector<uint32_t>(1000, 0); // 1000 because uints are grouped into 2s(indices index, metadata index)
-  glNamedBufferData(mChunkMapSSBO, mChunkMap.size() * sizeof(uint32_t), &mChunkMap.at(0), GL_DYNAMIC_DRAW);
   // Metadata buffer
-  glBindAttribLocation(mSVDAGShader.getID(), 3, "Metadata");
-  glGenBuffers(1, &mMetadataSSBO);
-  mSVDAGMetadata = std::vector<uint32_t>(1000, 0); // 1000 because metadata consists of midpoint and resolution per svdag
-  glNamedBufferData(mMetadataSSBO, mSVDAGMetadata.size() * sizeof(uint32_t), &mSVDAGMetadata.at(0), GL_DYNAMIC_DRAW);
+  glBindAttribLocation(mSVDAGShader.getID(), 2, "MetadataSSBO"); // TODO: Add data indices offset
+  glCreateBuffers(1, &mMetadataSSBO);
+  mSVDAGMetadata = std::vector<Metadata>(1000, {0, 0, 0, 0, glm::tvec3<float>(0, 0, 0)});
+  glNamedBufferData(mMetadataSSBO, mSVDAGMetadata.size() * sizeof(Metadata), &mSVDAGMetadata.at(0), GL_DYNAMIC_DRAW);
 }
 
 void RTVE::Camera::setDirection(float pYaw, float pPitch) {
@@ -126,14 +121,13 @@ void RTVE::Camera::updateViewportSize(const glm::vec2& pSize) {
 void RTVE::Camera::render() {
   mSVDAGShader.use();
   mSVDAGShader.setVec3("uCamPos", mPos);
-  mSVDAGShader.setInt("uSVDAGSize", mSVDAG->getSize());
   glm::mat4 view = glm::lookAt(mPos, mPos + mFront, mUp);
   mSVDAGShader.setMat4("uProjViewInv", glm::inverse(mProjection * view));
   mSVDAGShader.setFloat("uInverseNear", mInverseNear);
   mSVDAGShader.setFloat("uInverseFrustumDepth", mInverseFrustumDepth);
   mSVDAGShader.setFloat("uFar", mFar);
-  mSVDAGShader.setInt("uMidpoint", mSVDAG->getMidpoint());
   mSVDAGShader.setVec2("uHalfResolutionInv", mHalfResolutionInv);
+  mSVDAGShader.setUInt("uNumOctrees", mSVDAGs.size());
 
   // Bind SSBOs
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, mSVDAGindicesSSBO);
@@ -142,14 +136,11 @@ void RTVE::Camera::render() {
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, mSVDAGdataSSBO);
   glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, mSVDAGdataSSBO);
 
-  glBindBuffer(GL_SHADER_STORAGE_BUFFER, mChunkMapSSBO);
-  glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, mChunkMapSSBO);
-
-  glBindBuffer(GL_SHADER_STORAGE_BUFFER, mSVDAGMetadataSSBO);
-  glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, mSVDAGMetadataSSBO);
+  glBindBuffer(GL_SHADER_STORAGE_BUFFER, mMetadataSSBO);
+  glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, mMetadataSSBO);
 
   // Dispatch compute
-  glDispatchCompute(mScreenSize.x / 30, mScreenSize.y / 30, 1);
+  glDispatchCompute(mScreenSize.x / 30.f, mScreenSize.y / 30.f, 1);
   glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 
   // Bind texture
@@ -171,7 +162,8 @@ void RTVE::Camera::debugRender(Window& pWindow) {
   mDebugShader.setMat4("uView", view);
   mDebugShader.setMat4("uProjection", mProjection);
 
-  mSVDAG->drawDebug(&mDebugShader);
+  for (SparseVoxelDAG* p: mSVDAGs)
+    p->drawDebug(&mDebugShader);
 #endif
 }
 
@@ -180,47 +172,53 @@ void RTVE::Camera::attachSparseVoxelDAG(SparseVoxelDAG* pSVDAG) {
   mSVDAGShader.use();
 
   // Indices buffer ---------------------------------------
-  // glBufferData(GL_SHADER_STORAGE_BUFFER, pSVDAG->mIndices.size() * (8*sizeof(uint32_t)), &pSVDAG->mIndices.at(0), GL_STATIC_DRAW);
   uint size = pSVDAG->mIndices.size() * 8 * sizeof(uint32_t);
   glNamedBufferSubData(mSVDAGindicesSSBO, mIndicesBufferSizeBytes, size, &pSVDAG->mIndices.at(0));
   mIndicesBufferSizeBytes += size;
-  mIndicesBufferSize += pSVDAG->mIndices.size();
 
   // Data buffer ------------------------------------------
-  // glBufferData(GL_SHADER_STORAGE_BUFFER, pSVDAG->mData.size() * sizeof(VoxelData), &pSVDAG->mData.at(0), GL_STATIC_DRAW);
   size = pSVDAG->mData.size() * sizeof(VoxelData);
-  glNamedBufferSubData(mSVDAGdataSSBO, mDataBufferSize, size, &pSVDAG->mData.at(0));
-  mDataBufferSize += size;
+  glNamedBufferSubData(mSVDAGdataSSBO, mDataBufferSizeBytes, size, &pSVDAG->mData.at(0));
+  mDataBufferSizeBytes += size;
 
   // Metadata buffer --------------------------------------
-  uint metadataIndex = mSVDAGMetadata.size();
-  for (uint i = 0; i < mSVDAGMetadata.size() >> 1; ++i) {
-    if (mSVDAGMetadata.at(i << 1) == pSVDAG.getMidpoint() && mSVDAGMetadata.at((i << 1) + 1) == pSVDAG.getSize()) {
-      metadataIndex = i << 1;
-      break;
-    }
-  }
-  if (metadataIndex == mSVDAGMetadata.size()) {
-    std::array<uint32_t, 2> metadata{pSVDAG.getMidpoint(), pSVDAG.getSize()};
-    glNamedBufferSubData(mMetadataSSBO, mMetadataBufferSizeBytes, sizeof(metadata), &metadata.at(0));
-    mMetadataBufferSizeBytes += sizeof(metadata);
-  }
+  std::println("IndicesBufferSize: {}, sizeof(Metadata): {}, getSize(): {}", mIndicesBufferSize, sizeof(Metadata), pSVDAG->getSize());
 
-  // Chunk map buffer -------------------------------------
-  // Update
-  mChunkMap.at(mChunkMapSize << 1) = mIndicesBufferSize - pSVDAG->mIndices.size();
-  mChunkMap.at(mChunkMapSize << 1 + 1) = metadataIndex;
-  mChunkMapSize += 1;
-  // Fill buffer
-  glNamedBufferSubData(mChunkMapSSBO, 0, mChunkMap.size() * sizeof(uint32_t), &mChunkMap.at(0));
+  mSVDAGShader.printBufferOffsets();
+
+  mSVDAGMetadata.at(mMetadataBufferSize) = {mIndicesBufferSize, pSVDAG->getMidpoint(), pSVDAG->getSize(), 0, pSVDAG->getTranslation()};
+  glNamedBufferSubData(mMetadataSSBO, mMetadataBufferSizeBytes, sizeof(Metadata), &mSVDAGMetadata.at(mMetadataBufferSize));
+  ++mMetadataBufferSize;
+
+  // Update indices buffer size after so we dont have to subtract when writing metadata
+  mIndicesBufferSize += pSVDAG->mIndices.size();
+  uint test;
+  glGetNamedBufferSubData(mMetadataSSBO, mMetadataBufferSizeBytes, sizeof(test), &test);
+  std::println("Reading");
+  std::println("indicesIndex: {}", test);
+  glGetNamedBufferSubData(mMetadataSSBO, mMetadataBufferSizeBytes + sizeof(uint32_t), sizeof(test), &test);
+  std::println("midpoint: {}", test);
+  glGetNamedBufferSubData(mMetadataSSBO, mMetadataBufferSizeBytes + 2 * sizeof(uint32_t), sizeof(test), &test);
+  std::println("size: {}", test);
+  float testF;
+  glGetNamedBufferSubData(mMetadataSSBO, mMetadataBufferSizeBytes + 3 * sizeof(uint32_t), sizeof(testF), &testF);
+  std::println("padding: {}", testF);
+  glGetNamedBufferSubData(mMetadataSSBO, mMetadataBufferSizeBytes + 4 * sizeof(uint32_t), sizeof(testF), &testF);
+  std::println("translation.x: {}", testF);
+  glGetNamedBufferSubData(mMetadataSSBO, mMetadataBufferSizeBytes + 5 * sizeof(uint32_t), sizeof(testF), &testF);
+  std::println("translation.y: {}", testF);
+  glGetNamedBufferSubData(mMetadataSSBO, mMetadataBufferSizeBytes + 6 * sizeof(uint32_t), sizeof(testF), &testF);
+  std::println("translation.z: {}", testF);
+  std::println("Finished");
+  mMetadataBufferSizeBytes += sizeof(Metadata);
 }
 
 RTVE::Camera::~Camera() {
   glDeleteVertexArrays(1, &mScreenVAO);
   glDeleteBuffers(1, &mScreenVBO);
-  glDeleteBuffers(1, &mSVDAGdataSSBO);
   glDeleteBuffers(1, &mSVDAGindicesSSBO);
-  glDeleteBuffers(1, &mChunkMapSSBO);
+  glDeleteBuffers(1, &mSVDAGdataSSBO);
+  glDeleteBuffers(1, &mMetadataSSBO);
 }
 
 void RTVE::Camera::updateVectors() {

@@ -19,10 +19,12 @@ namespace RTVE {
     void load(const std::string& pVertexPath, const std::string& pFragPath);
 
     void use() const;
-    unsigned int getID();
+    GLuint getID();
+    void printBufferOffsets();
 
     void setBool(const std::string& name, bool value) const;
     void setInt(const std::string& name, int value) const;
+    void setUInt(const std::string& name, uint value) const;
     void setFloat(const std::string& name, float value) const;
 
     void setVec2(const std::string& name, const glm::vec2& value) const;
@@ -40,7 +42,7 @@ namespace RTVE {
   protected:
     void checkCompileErrors(GLuint pShader, const std::string& pType);
 
-    uint mID;
+    GLuint mID;
   };
 }
 

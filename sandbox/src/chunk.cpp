@@ -2,18 +2,18 @@
 
 SimplexNoise Chunk::sSimplex = SimplexNoise(0.1f/sScale, 0.5f, sLacunarity, sPersistance);
 
-Chunk::Chunk(glm::vec3 pOffset)
-:mSVDAG(0), mOffset(pOffset) {
+Chunk::Chunk(glm::ivec2 pOffset)
+:mSVDAG(0), mChunkPos(pOffset), mOffset(pOffset * CHUNK_SIZE) {
   std::vector<std::vector<std::vector<bool>>> grid;
   grid = std::vector<std::vector<std::vector<bool>>>(CHUNK_SIZE, std::vector<std::vector<bool>>(CHUNK_SIZE, std::vector<bool>(CHUNK_SIZE, false)));
 
   for (uint row = 0; row < CHUNK_SIZE; ++row) {
-    const float y = static_cast<float>(row + mOffset.y*sScale);
+    const float y = static_cast<float>(row + mOffset.y);
 
     for (uint col = 0; col < CHUNK_SIZE; ++col) {
-      const float x = static_cast<float>(col + mOffset.x*sScale);
+      const float x = static_cast<float>(col + mOffset.x);
 
-      const float noise = std::max(0.f, (sSimplex.fractal(sOctaves, x, y) + mOffset.z) / 2.f);
+      const float noise = std::max(0.f, (sSimplex.fractal(sOctaves, x, y) + sYOffset) / 2.f);
       uint maxHeight = static_cast<uint>(noise * 100);
       for (uint height = 0; height <= maxHeight; ++height) {
         try {
@@ -26,7 +26,10 @@ Chunk::Chunk(glm::vec3 pOffset)
     }
   }
   mSVDAG = RTVE::SparseVoxelDAG(grid);
+  mSVDAG.translate(glm::vec3(mOffset.x, 0, mOffset.y));
   mSVDAG.mData.push_back({glm::vec4(0.1, 0.1, 0.1, 0)}); // Air - background color
   mSVDAG.mData.push_back({glm::vec4(1, 1, 1, 0)}); // Block color
+
+  // mSVDAG.generateDebugMesh();
 }
 

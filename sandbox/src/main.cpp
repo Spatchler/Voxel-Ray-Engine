@@ -2,8 +2,6 @@
 
 #include "chunk.hpp"
 
-#define SVDAG_SIZE 128
-
 int main() {
   RTVE::Window& window = RTVE::Window::get();
   window.init("RTVE Demo");
@@ -17,17 +15,14 @@ int main() {
   // RTVE::SparseVoxelDAG model("sandbox/res/testC.bin");
   // RTVE::SparseVoxelDAG model("sandbox/res/highres.bin");
 
-  Chunk chunk(glm::vec3(0, 0, 0));
+  Chunk chunk(glm::vec2(0, 0));
+  Chunk chunk1(glm::vec2(1, 0));
 
-  chunk.mSVDAG.generateDebugMesh();
   camera.attachSparseVoxelDAG(&chunk.mSVDAG);
+  camera.attachSparseVoxelDAG(&chunk1.mSVDAG);
   
   camera.mPos = glm::vec3(0, 0, 0);
   camera.setDirection(0, 0);
-  // camera.mPos = glm::vec3(SVDAG_SIZE * 2, SVDAG_SIZE * 2, SVDAG_SIZE * 2);
-  // camera.setDirection(-135.f, -45.f);
-
-  // camera.attachSparseVoxelDAG(&world);
 
   glm::vec2 lastMousePos;
 

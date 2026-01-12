@@ -59,8 +59,55 @@ void RTVE::Shader::use() const {
   glUseProgram(mID);
 }
 
-uint RTVE::Shader::getID() {
+GLuint RTVE::Shader::getID() {
   return mID;
+}
+
+void RTVE::Shader::printBufferOffsets() {
+  // https://stackoverflow.com/questions/56512216/how-do-i-query-the-alignment-stride-for-an-ssbo-struct
+  // Source - https://stackoverflow.com/a
+  // Posted by Rabbid76, modified by community. See post 'Timeline' for change history
+  // Retrieved 2026-01-11, License - CC BY-SA 4.0
+
+  GLint no_of, ssbo_max_len, var_max_len;
+  glGetProgramInterfaceiv(mID, GL_SHADER_STORAGE_BLOCK, GL_ACTIVE_RESOURCES, &no_of);
+  glGetProgramInterfaceiv(mID, GL_SHADER_STORAGE_BLOCK, GL_MAX_NAME_LENGTH, &ssbo_max_len);
+  glGetProgramInterfaceiv(mID, GL_BUFFER_VARIABLE, GL_MAX_NAME_LENGTH, &var_max_len);
+  std::vector<GLchar> name(100);
+  for (int i_resource = 0; i_resource < no_of; ++i_resource) {
+    // get name of the shader storage block
+    GLsizei strLength;
+    glGetProgramResourceName(mID, GL_SHADER_STORAGE_BLOCK, i_resource, ssbo_max_len, &strLength, name.data());
+
+    // get resource index of the shader storage block
+    GLint resInx = glGetProgramResourceIndex(mID, GL_SHADER_STORAGE_BLOCK, name.data());
+
+    // get number of the buffer variables in the shader storage block
+    GLenum prop = GL_NUM_ACTIVE_VARIABLES;
+    GLint num_var;
+    glGetProgramResourceiv(mID, GL_SHADER_STORAGE_BLOCK, resInx, 1, &prop, 1, nullptr, &num_var);
+
+    // get resource indices of the buffer variables
+    std::vector<GLint> vars(num_var);
+    prop = GL_ACTIVE_VARIABLES;
+    glGetProgramResourceiv(mID, GL_SHADER_STORAGE_BLOCK, resInx, 1, &prop, (GLsizei)vars.size(), nullptr, vars.data());
+    std::println("vars.size(): {}, {}", vars.size(), vars);
+
+    std::vector<GLint> offsets(num_var);
+    std::vector<std::string> var_names(num_var);
+    for (GLint i = 0; i < num_var; i++) {
+      // get offset of buffer variable relative to SSBO
+      GLenum prop = GL_OFFSET;
+      glGetProgramResourceiv(mID, GL_BUFFER_VARIABLE, vars[i], 1, &prop, (GLsizei)offsets.size(), nullptr, &offsets[i]);
+  
+      // get name of buffer variable
+      std::vector<GLchar>var_name(var_max_len);
+      GLsizei strLength;
+      glGetProgramResourceName(mID, GL_BUFFER_VARIABLE, vars[i], var_max_len, &strLength, var_name.data());
+      var_names[i] = var_name.data();
+      std::println("Name: {}, Offset: {}", var_names[i], offsets[i]);
+    }
+  }
 }
 
 // ------------------------------------------------------------------------
@@ -72,6 +119,10 @@ void RTVE::Shader::setBool(const std::string& name, bool value) const {
 void RTVE::Shader::setInt(const std::string& name, int value) const {
   use();
   glUniform1i(glGetUniformLocation(mID, name.c_str()), value);
+}
+void RTVE::Shader::setUInt(const std::string& name, uint value) const {
+  use();
+  glUniform1ui(glGetUniformLocation(mID, name.c_str()), value);
 }
 void RTVE::Shader::setFloat(const std::string& name, float value) const {
   use();

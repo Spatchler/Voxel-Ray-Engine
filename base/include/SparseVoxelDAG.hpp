@@ -32,6 +32,9 @@ namespace RTVE {
 
     void insert(const glm::vec3& pPoint, const VoxelData& pData);
 
+    void translate(const glm::vec3& pVec);
+    const glm::vec3& getTranslation();
+
     constexpr uint getSize() { return mSize; }
     constexpr uint getMidpoint() { return mMidpoint; }
     constexpr uint getMaxDepth() { return mMaxDepth; }
@@ -60,6 +63,8 @@ namespace RTVE {
     void insertCubeVertices(std::vector<glm::vec3>& pVertices, glm::vec3 pPos, float pScale) const;
 
     uint mDebugVertexCount;
+
+    glm::vec3 mTranslation{0, 0, 0};
 
     uint mSize, mMaxDepth, mMidpoint;
 #ifdef _DEBUG

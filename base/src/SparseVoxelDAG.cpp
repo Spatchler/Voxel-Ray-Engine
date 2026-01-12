@@ -1,7 +1,7 @@
 #include "SparseVoxelDAG.hpp"
 
 RTVE::SparseVoxelDAG::SparseVoxelDAG(uint pSize)
-:mSize(pSize), mMaxDepth(log2(pSize)), mMidpoint(UINT_MAX / 2) {
+:mSize(pSize), mMaxDepth(std::log2(pSize)), mMidpoint(UINT_MAX / 2) {
   mIndices.push_back({mMidpoint, mMidpoint, mMidpoint, mMidpoint, mMidpoint, mMidpoint, mMidpoint, mMidpoint});
 }
 
@@ -11,7 +11,7 @@ RTVE::SparseVoxelDAG::SparseVoxelDAG(const std::string& pPath)
 }
 
 RTVE::SparseVoxelDAG::SparseVoxelDAG(const std::vector<std::vector<std::vector<bool>>>& pGrid)
-:mSize(pGrid.size()) {
+:mSize(pGrid.size()), mMaxDepth(std::log2(mSize)), mMidpoint(UINT_MAX / 2) {
   std::vector<std::tuple<uint, uint, glm::vec3, uint>> queue;
 
   {
@@ -41,6 +41,14 @@ void RTVE::SparseVoxelDAG::insert(const glm::vec3& pPoint, const VoxelData& pDat
   insertImpl(pPoint, index, 0, mSize, glm::vec3(0, 0, 0));
 }
 
+void RTVE::SparseVoxelDAG::translate(const glm::vec3& pVec) {
+  mTranslation += pVec;
+}
+
+const glm::vec3& RTVE::SparseVoxelDAG::getTranslation() {
+  return mTranslation;
+}
+
 void RTVE::SparseVoxelDAG::print() {
   std::println("\n------------------------------------");
   std::println("Indices:");
@@ -60,6 +68,7 @@ void RTVE::SparseVoxelDAG::drawDebug(Shader* pShader) {
   pShader->setVec3("uColour", glm::vec3(1, 0, 0));
 
   glm::mat4 model = glm::mat4(1.0f);
+  model = glm::translate(model, mTranslation);
   model = glm::scale(model, glm::vec3(mSize, mSize, mSize));
   pShader->setMat4("uModel", model);
 
