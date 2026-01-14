@@ -3,6 +3,7 @@
 #include <fstream>
 #include <sstream>
 #include <print>
+#include <vector>
 
 #include <glad/glad.h>
 
