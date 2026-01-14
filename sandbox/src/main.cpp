@@ -9,17 +9,31 @@ int main() {
   window.setClearColor(glm::vec4(0.1f, 0.1f, 0.1f, 0.f));
 
   RTVE::Camera camera;
+  RTVE::Skybox skybox({ "sandbox/res/skybox/right.jpeg",
+                        "sandbox/res/skybox/left.jpeg",
+                        "sandbox/res/skybox/top.jpeg",
+                        "sandbox/res/skybox/bottom.jpeg",
+                        "sandbox/res/skybox/front.jpeg",
+                        "sandbox/res/skybox/back.jpeg"    });
+  camera.attachSkybox(&skybox);
 
   // RTVE::SparseVoxelDAG model("sandbox/res/outS.bin");
   // RTVE::SparseVoxelDAG model("sandbox/res/test.bin");
   // RTVE::SparseVoxelDAG model("sandbox/res/testC.bin");
   // RTVE::SparseVoxelDAG model("sandbox/res/highres.bin");
 
-  Chunk chunk(glm::vec2(0, 0));
-  Chunk chunk1(glm::vec2(1, 0));
-
-  camera.attachSparseVoxelDAG(&chunk.mSVDAG);
-  camera.attachSparseVoxelDAG(&chunk1.mSVDAG);
+  std::vector<Chunk> chunks;
+  // chunks.reserve(10000); // So pointers dont change
+  int renderDistance = 10;
+  for (int x = -renderDistance; x <= renderDistance; ++x) {
+    for (int y = -renderDistance; y <= renderDistance; ++y) {
+      if (x*x + y*y < renderDistance)
+        chunks.push_back(glm::ivec2(x, y));
+    }
+  }
+  // chunks.emplace_back(glm::ivec2(0, 0));
+  for (uint i = 0; i < chunks.size(); ++i)
+    camera.attachSparseVoxelDAG(&chunks.at(i).mSVDAG);
   
   camera.mPos = glm::vec3(0, 0, 0);
   camera.setDirection(0, 0);
@@ -97,6 +111,7 @@ int main() {
     }
   }
 
-  chunk.mSVDAG.releaseDebugMesh();
+  // chunk.mSVDAG.releaseDebugMesh();
+  skybox.release();
 }
 
