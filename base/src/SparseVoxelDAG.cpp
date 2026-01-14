@@ -10,7 +10,7 @@ RTVE::SparseVoxelDAG::SparseVoxelDAG(const std::string& pPath)
   loadFromFile(pPath);
 }
 
-RTVE::SparseVoxelDAG::SparseVoxelDAG(const std::vector<std::vector<std::vector<bool>>>& pGrid)
+RTVE::SparseVoxelDAG::SparseVoxelDAG(const std::vector<std::vector<std::vector<uint32_t>>>& pGrid)
 :mSize(pGrid.size()), mMaxDepth(std::log2(mSize)), mMidpoint(UINT_MAX / 2) {
   std::vector<std::tuple<uint, uint, glm::vec3, uint>> queue;
 
@@ -164,25 +164,24 @@ void RTVE::SparseVoxelDAG::loadFromFile(const std::string& pPath) {
   }
 }
 
-uint RTVE::SparseVoxelDAG::generateSVDAGTopDown(const std::vector<std::vector<std::vector<bool>>>& pGrid, glm::vec3 pNodeOrigin, uint pNodeSize, std::vector<std::tuple<uint, uint, glm::vec3, uint>>& pQueue) {
-  bool allZero = true;
-  bool allOne = true;
+uint RTVE::SparseVoxelDAG::generateSVDAGTopDown(const std::vector<std::vector<std::vector<uint32_t>>>& pGrid, glm::vec3 pNodeOrigin, uint pNodeSize, std::vector<std::tuple<uint, uint, glm::vec3, uint>>& pQueue) {
+  uint32_t firstVoxel = pGrid[pNodeOrigin.x][pNodeOrigin.y][pNodeOrigin.z];
+  if (pNodeSize == 1)
+    return mMidpoint + firstVoxel;
+  bool allSame = true;
   uint volume = pNodeSize * pNodeSize * pNodeSize;
 
-  for (uint x = pNodeOrigin.x; x < pNodeOrigin.x + pNodeSize; ++x) {
-    for (uint y = pNodeOrigin.y; y < pNodeOrigin.y + pNodeSize; ++y) {
-      for (uint z = pNodeOrigin.z; z < pNodeOrigin.z + pNodeSize && (allOne || allZero); ++z) {
-        const bool& v = pGrid[x][y][z];
-        allZero = allZero && v == 0;
-        allOne = allOne && v == 1;
+  for (uint x = pNodeOrigin.x; x < (pNodeOrigin.x + pNodeSize) && allSame; ++x) {
+    for (uint y = pNodeOrigin.y; (y < pNodeOrigin.y + pNodeSize) && allSame; ++y) {
+      for (uint z = pNodeOrigin.z; (z < pNodeOrigin.z + pNodeSize) && allSame; ++z) {
+        const uint32_t& v = pGrid[x][y][z];
+        allSame = firstVoxel == v;
       }
     }
   }
 
-  if (allZero)
-    return mMidpoint;
-  else if (allOne)
-    return mMidpoint + 1;
+  if (allSame)
+    return mMidpoint + firstVoxel;
 
   pNodeSize = pNodeSize >> 1;
 
