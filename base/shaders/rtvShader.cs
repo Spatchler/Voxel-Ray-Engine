@@ -65,14 +65,14 @@ void main() {
       v = bData[index];
 
       v.color.a = ((1/depth) - uInverseNear) * uInverseFrustumDepth;
-      if (v.color.a > imageLoad(imgOut, ivec2(gl_GlobalInvocationID.xy)).a)
+      if (v.color.a >= imageLoad(imgOut, ivec2(gl_GlobalInvocationID.xy)).a)
         continue;
-      
+
       float brightness = (dot(light, normal) + 1) / 2;
 
-      v.color.r = max(0, v.color.r * brightness);
-      v.color.g = max(0, v.color.g * brightness);
-      v.color.b = max(0, v.color.b * brightness);
+      v.color.r = min(1, max(0, v.color.r * brightness));
+      v.color.g = min(1, max(0, v.color.g * brightness));
+      v.color.b = min(1, max(0, v.color.b * brightness));
 
       imageStore(imgOut, ivec2(gl_GlobalInvocationID.xy), v.color);
     }
@@ -216,7 +216,7 @@ uint traverse(uint pRootIndex, uint pMidpoint, uint pSize, vec3 pOrigin, vec3 pD
   currentNode.origin = vec3(0, 0, 0);
   currentNode.index = pRootIndex;
   uint currentNodeSize = pSize;
-  uint depth = 0;
+  uint treeDepth = 0;
   for (;;) {
     // Return if the node is a leaf and is not air
     if (currentNode.index - pRootIndex > pMidpoint)
@@ -235,7 +235,7 @@ uint traverse(uint pRootIndex, uint pMidpoint, uint pSize, vec3 pOrigin, vec3 pD
         pDepth = uFar;
         return 0; // If ray has gone outside the tree return 0
       }
-      depth = 0;
+      treeDepth = 0;
       currentNode.index = pRootIndex;
       currentNode.origin = vec3(0, 0, 0);
       currentNodeSize = pSize;
@@ -273,7 +273,7 @@ uint traverse(uint pRootIndex, uint pMidpoint, uint pSize, vec3 pOrigin, vec3 pD
     n.origin = currentNode.origin + (pos * currentNodeSize);
     n.index = pRootIndex + bIndices[currentNode.index][toChildIndex(pos)];
     currentNode = n;
-    ++depth;
+    ++treeDepth;
   }
   return 0;
 }

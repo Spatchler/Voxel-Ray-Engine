@@ -4,6 +4,7 @@
 #include "shader.hpp"
 #include "computeShader.hpp"
 #include "SparseVoxelDAG.hpp"
+#include "skybox.hpp"
 
 namespace RTVE {
   struct Node {
@@ -45,6 +46,8 @@ namespace RTVE {
     void debugRender(Window& pWindow);
 
     void attachSparseVoxelDAG(SparseVoxelDAG* pSVDAG);
+    void attachSkybox(Skybox* pSkybox);
+    void detachSkybox();
 
     ~Camera();
 
@@ -67,8 +70,10 @@ namespace RTVE {
     std::vector<SparseVoxelDAG*> mSVDAGs;
     std::vector<Metadata> mSVDAGMetadata;
 
+    Skybox* mSkybox;
+
     ComputeShader mSVDAGShader;
-    Shader mScreenShader;
+    Shader mScreenShader, mSkyboxShader;
     uint mComputeTexture;
     uint mScreenVAO, mScreenVBO;
     uint mIndicesBufferSize = 0, mMetadataBufferSize = 0;

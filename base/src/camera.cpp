@@ -1,7 +1,7 @@
 #include "camera.hpp"
 
 RTVE::Camera::Camera()
-:mSVDAGShader("base/shaders/rtvShader.cs"), mScreenShader("base/shaders/textureShader.vs", "base/shaders/textureShader.fs"), mDebugShader("base/shaders/debugShader.vs", "base/shaders/debugShader.fs"), mWorldUp(0, 1, 0), mPos(0, 0, 0), mScreenSize(512, 512) {
+:mSkybox(NULL), mSVDAGShader("base/shaders/rtvShader.cs"), mScreenShader("base/shaders/textureShader.vs", "base/shaders/textureShader.fs"), mSkyboxShader("base/shaders/skyboxShader.vs", "base/shaders/skyboxShader.fs"), mDebugShader("base/shaders/debugShader.vs", "base/shaders/debugShader.fs"), mWorldUp(0, 1, 0), mPos(0, 0, 0), mScreenSize(512, 512) {
   float vertices[] = {
     // positions  // texture coords
     -1.0f,  1.0f, 0.0f, 1.0f,
@@ -48,7 +48,8 @@ RTVE::Camera::Camera()
   glBindAttribLocation(mSVDAGShader.getID(), 0, "SVDAGindicesSSBO");
   glCreateBuffers(1, &mSVDAGindicesSSBO);
   {
-    std::vector<uint32_t> data(1000000, 0);
+    // std::vector<uint32_t> data(10000000, 0);
+    std::vector<uint32_t> data(100000000, 0);
     glNamedBufferData(mSVDAGindicesSSBO, data.size() * sizeof(uint), &data.at(0), GL_DYNAMIC_DRAW);
   }
   // Data buffer
@@ -61,7 +62,7 @@ RTVE::Camera::Camera()
   // Metadata buffer
   glBindAttribLocation(mSVDAGShader.getID(), 2, "MetadataSSBO"); // TODO: Add data indices offset
   glCreateBuffers(1, &mMetadataSSBO);
-  mSVDAGMetadata = std::vector<Metadata>(1000, {0, 0, 0, 0, glm::tvec3<float>(0, 0, 0)});
+  mSVDAGMetadata = std::vector<Metadata>(100000, {0, 0, 0, 0, glm::tvec3<float>(0, 0, 0)});
   glNamedBufferData(mMetadataSSBO, mSVDAGMetadata.size() * sizeof(Metadata), &mSVDAGMetadata.at(0), GL_DYNAMIC_DRAW);
 }
 
@@ -153,6 +154,15 @@ void RTVE::Camera::render() {
   glBindVertexArray(mScreenVAO);
   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
   glBindVertexArray(0);
+
+  // Render skybox
+  if (mSkybox) {
+    mSkyboxShader.use();
+    mSkyboxShader.setInt("skybox", 0);
+    mSkyboxShader.setMat4("uProjection", mProjection);
+    mSkyboxShader.setMat4("uView", glm::mat4(glm::mat3(view)));
+    mSkybox->draw();
+  }
 }
 
 void RTVE::Camera::debugRender(Window& pWindow) {
@@ -210,7 +220,17 @@ void RTVE::Camera::attachSparseVoxelDAG(SparseVoxelDAG* pSVDAG) {
   glGetNamedBufferSubData(mMetadataSSBO, mMetadataBufferSizeBytes + 6 * sizeof(uint32_t), sizeof(testF), &testF);
   std::println("translation.z: {}", testF);
   std::println("Finished");
+  std::println("indices size: {}", pSVDAG->mIndices.size());
+  std::println("data size: {}", pSVDAG->mData.size());
   mMetadataBufferSizeBytes += sizeof(Metadata);
+}
+
+void RTVE::Camera::attachSkybox(Skybox* pSkybox) {
+  mSkybox = pSkybox;
+}
+
+void RTVE::Camera::detachSkybox() {
+  mSkybox = NULL;
 }
 
 RTVE::Camera::~Camera() {
