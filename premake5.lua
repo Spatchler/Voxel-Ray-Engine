@@ -60,7 +60,6 @@ project "sandbox"
     links {
         "GL",
         "glfw",
-        "assimp",
         "base",
         "pthread",
         "dl",
@@ -104,7 +103,6 @@ project "base"
     links {
         "GL",
         "glfw",
-        "assimp",
         "pthread",
         "dl",
     }
