@@ -28,17 +28,8 @@ RTVE::SparseVoxelDAG::SparseVoxelDAG(const std::vector<std::vector<std::vector<u
   }
 }
 
-void RTVE::SparseVoxelDAG::insert(const glm::vec3& pPoint, const VoxelData& pData) {
-  // std::println("Inserting: {}, {}, {}", pPoint.x, pPoint.y, pPoint.z);
-  const auto result = std::find(std::begin(mData), std::end(mData), pData);
-  uint index;
-  if (result != mData.end())
-    index = std::distance(mData.begin(), result);
-  else {
-    index = mData.size();
-    mData.push_back(pData);
-  }
-  insertImpl(pPoint, index, 0, mSize, glm::vec3(0, 0, 0));
+void RTVE::SparseVoxelDAG::insert(const glm::vec3& pPoint, uint pDataIndex) {
+  insertImpl(pPoint, pDataIndex, 0, mSize, glm::vec3(0, 0, 0));
 }
 
 void RTVE::SparseVoxelDAG::translate(const glm::vec3& pVec) {
@@ -54,10 +45,6 @@ void RTVE::SparseVoxelDAG::print() {
   std::println("Indices:");
   for (auto node: mIndices) {
     std::println("{}, {}, {}, {}, {}, {}, {}, {}", node[0], node[1], node[2], node[3], node[4], node[5], node[6], node[7]);
-  }
-  std::println("Data:");
-  for (VoxelData& node: mData) {
-    std::println("{}, {}, {}, {}", node.color.x, node.color.y, node.color.z, node.color.w);
   }
   std::println("Size: {}", mSize);
   std::println("------------------------------------\n");

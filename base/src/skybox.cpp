@@ -10,14 +10,11 @@ Skybox::Skybox(std::array<std::string, 6> pFaces) {
   int width, height, nrComponents;
   for (uint i = 0; i < 6; ++i) {
     uint8_t* data = stbi_load(pFaces[i].c_str(), &width, &height, &nrComponents, 0);
-    if (data) {
+    if (data)
       glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
-      stbi_image_free(data);
-    }
-    else {
+    else
       std::println("Cubemap texture failed to load at path: {}", pFaces[i]);
-      stbi_image_free(data);
-    }
+    stbi_image_free(data);
   }
   glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
   glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);

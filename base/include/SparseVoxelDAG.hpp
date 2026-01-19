@@ -3,8 +3,6 @@
 #include "timer.hpp"
 #include "shader.hpp"
 
-// #include "VMesh/voxelGrid.hpp"
-
 #include <vector>
 #include <print>
 #include <algorithm>
@@ -16,21 +14,13 @@
 #include <glm/gtc/type_ptr.hpp>
 
 namespace RTVE {
-  struct VoxelData {
-    glm::vec4 color;
-  };
-
-  constexpr bool operator==(const VoxelData& lhs, const VoxelData& rhs) {
-    return lhs.color == rhs.color;
-  }
-
   class SparseVoxelDAG {
   public:
     SparseVoxelDAG(uint pSize);
     SparseVoxelDAG(const std::string& pPath);
     SparseVoxelDAG(const std::vector<std::vector<std::vector<uint32_t>>>& pGrid);
 
-    void insert(const glm::vec3& pPoint, const VoxelData& pData);
+    void insert(const glm::vec3& pPoint, uint pDataIndex);
 
     void translate(const glm::vec3& pVec);
     const glm::vec3& getTranslation();
@@ -50,7 +40,6 @@ namespace RTVE {
     void releaseDebugMesh();
 
     std::vector<std::array<uint32_t, 8>> mIndices;
-    std::vector<VoxelData> mData;
   protected:
     void loadFromFile(const std::string& pPath);
 

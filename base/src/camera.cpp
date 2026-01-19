@@ -1,7 +1,7 @@
 #include "camera.hpp"
 
 RTVE::Camera::Camera()
-:mSkybox(NULL), mSVDAGShader("base/shaders/rtvShader.cs"), mScreenShader("base/shaders/textureShader.vs", "base/shaders/textureShader.fs"), mSkyboxShader("base/shaders/skyboxShader.vs", "base/shaders/skyboxShader.fs"), mDebugShader("base/shaders/debugShader.vs", "base/shaders/debugShader.fs"), mWorldUp(0, 1, 0), mPos(0, 0, 0), mScreenSize(512, 512) {
+:mSkybox(NULL), mSVDAGShader("base/shaders/rtvShader.comp"), mScreenShader("base/shaders/textureShader.vert", "base/shaders/textureShader.frag"), mSkyboxShader("base/shaders/skyboxShader.vert", "base/shaders/skyboxShader.frag"), mDebugShader("base/shaders/debugShader.vert", "base/shaders/debugShader.frag"), mWorldUp(0, 1, 0), mPos(0, 0, 0), mScreenSize(512, 512) {
   float vertices[] = {
     // positions  // texture coords
     -1.0f,  1.0f, 0.0f, 1.0f,
@@ -56,13 +56,14 @@ RTVE::Camera::Camera()
   glBindAttribLocation(mSVDAGShader.getID(), 1, "SVDAGdataSSBO");
   glCreateBuffers(1, &mSVDAGdataSSBO);
   {
-    std::vector<VoxelData> data(1000, {glm::vec4(0, 0, 0, 0)});
+    // std::vector<VoxelData> data(1000, {glm::vec4(0, 0, 0, 0)});
+    std::vector<VoxelData> data(1000, {0});
     glNamedBufferData(mSVDAGdataSSBO, data.size() * sizeof(VoxelData), &data.at(0), GL_DYNAMIC_DRAW);
   }
   // Metadata buffer
   glBindAttribLocation(mSVDAGShader.getID(), 2, "MetadataSSBO"); // TODO: Add data indices offset
   glCreateBuffers(1, &mMetadataSSBO);
-  mSVDAGMetadata = std::vector<Metadata>(100000, {0, 0, 0, 0, glm::tvec3<float>(0, 0, 0)});
+  mSVDAGMetadata = std::vector<Metadata>(100000, {0, 0, 0, 0, glm::tvec3<float>(0, 0, 0), 0});
   glNamedBufferData(mMetadataSSBO, mSVDAGMetadata.size() * sizeof(Metadata), &mSVDAGMetadata.at(0), GL_DYNAMIC_DRAW);
 }
 
@@ -130,6 +131,11 @@ void RTVE::Camera::render() {
   mSVDAGShader.setVec2("uHalfResolutionInv", mHalfResolutionInv);
   mSVDAGShader.setUInt("uNumOctrees", mSVDAGs.size());
 
+  // Bind palette
+  mSVDAGShader.setInt("texArray", 0);
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_2D_ARRAY, mPalette->getTexID());
+
   // Bind SSBOs
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, mSVDAGindicesSSBO);
   glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, mSVDAGindicesSSBO);
@@ -177,8 +183,16 @@ void RTVE::Camera::debugRender(Window& pWindow) {
 #endif
 }
 
-void RTVE::Camera::attachSparseVoxelDAG(SparseVoxelDAG* pSVDAG) {
-  mSVDAGs.push_back(pSVDAG);
+uint RTVE::Camera::attachPalette(Palette* pPalette) {
+  mPalette = pPalette;
+  uint size = pPalette->getSize() * sizeof(VoxelData);
+  glNamedBufferSubData(mSVDAGdataSSBO, mDataBufferSizeBytes, size, pPalette->getStart());
+  mDataBufferSizeBytes += size;
+  mDataBufferSize += pPalette->getSize();
+  return mDataBufferSize - pPalette->getSize();
+}
+
+void RTVE::Camera::attachSparseVoxelDAG(SparseVoxelDAG* pSVDAG, uint32_t pPaletteOffset, uint32_t pPaletteSize) {
   mSVDAGShader.use();
 
   // Indices buffer ---------------------------------------
@@ -186,43 +200,16 @@ void RTVE::Camera::attachSparseVoxelDAG(SparseVoxelDAG* pSVDAG) {
   glNamedBufferSubData(mSVDAGindicesSSBO, mIndicesBufferSizeBytes, size, &pSVDAG->mIndices.at(0));
   mIndicesBufferSizeBytes += size;
 
-  // Data buffer ------------------------------------------
-  size = pSVDAG->mData.size() * sizeof(VoxelData);
-  glNamedBufferSubData(mSVDAGdataSSBO, mDataBufferSizeBytes, size, &pSVDAG->mData.at(0));
-  mDataBufferSizeBytes += size;
-
   // Metadata buffer --------------------------------------
-  std::println("IndicesBufferSize: {}, sizeof(Metadata): {}, getSize(): {}", mIndicesBufferSize, sizeof(Metadata), pSVDAG->getSize());
-
-  mSVDAGShader.printBufferOffsets();
-
-  mSVDAGMetadata.at(mMetadataBufferSize) = {mIndicesBufferSize, pSVDAG->getMidpoint(), pSVDAG->getSize(), 0, pSVDAG->getTranslation()};
+  mSVDAGMetadata.at(mMetadataBufferSize) = {mIndicesBufferSize, pSVDAG->getMidpoint(), pSVDAG->getSize(), pPaletteOffset, pSVDAG->getTranslation(), pPaletteSize};
   glNamedBufferSubData(mMetadataSSBO, mMetadataBufferSizeBytes, sizeof(Metadata), &mSVDAGMetadata.at(mMetadataBufferSize));
   ++mMetadataBufferSize;
-
+  
   // Update indices buffer size after so we dont have to subtract when writing metadata
   mIndicesBufferSize += pSVDAG->mIndices.size();
-  uint test;
-  glGetNamedBufferSubData(mMetadataSSBO, mMetadataBufferSizeBytes, sizeof(test), &test);
-  std::println("Reading");
-  std::println("indicesIndex: {}", test);
-  glGetNamedBufferSubData(mMetadataSSBO, mMetadataBufferSizeBytes + sizeof(uint32_t), sizeof(test), &test);
-  std::println("midpoint: {}", test);
-  glGetNamedBufferSubData(mMetadataSSBO, mMetadataBufferSizeBytes + 2 * sizeof(uint32_t), sizeof(test), &test);
-  std::println("size: {}", test);
-  float testF;
-  glGetNamedBufferSubData(mMetadataSSBO, mMetadataBufferSizeBytes + 3 * sizeof(uint32_t), sizeof(testF), &testF);
-  std::println("padding: {}", testF);
-  glGetNamedBufferSubData(mMetadataSSBO, mMetadataBufferSizeBytes + 4 * sizeof(uint32_t), sizeof(testF), &testF);
-  std::println("translation.x: {}", testF);
-  glGetNamedBufferSubData(mMetadataSSBO, mMetadataBufferSizeBytes + 5 * sizeof(uint32_t), sizeof(testF), &testF);
-  std::println("translation.y: {}", testF);
-  glGetNamedBufferSubData(mMetadataSSBO, mMetadataBufferSizeBytes + 6 * sizeof(uint32_t), sizeof(testF), &testF);
-  std::println("translation.z: {}", testF);
-  std::println("Finished");
-  std::println("indices size: {}", pSVDAG->mIndices.size());
-  std::println("data size: {}", pSVDAG->mData.size());
   mMetadataBufferSizeBytes += sizeof(Metadata);
+
+  mSVDAGs.push_back(pSVDAG); // Push back at the end so num octrees uniform only changes after data is ready
 }
 
 void RTVE::Camera::attachSkybox(Skybox* pSkybox) {

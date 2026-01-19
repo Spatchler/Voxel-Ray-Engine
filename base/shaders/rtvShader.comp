@@ -3,8 +3,14 @@
 layout (local_size_x = 30, local_size_y = 30, local_size_z = 1) in;
 layout (rgba32f, binding = 0) uniform image2D imgOut;
 
+// struct VoxelData {
+//   vec4 color;
+// };
+
 struct VoxelData {
-  vec4 color;
+  uint texTopIndex;
+  uint texSideIndex;
+  uint texBottomIndex;
 };
 
 struct Node {
@@ -16,7 +22,9 @@ struct Metadata {
   uint indicesIndex;
   uint midpoint;
   uint size;
+  uint paletteIndex;
   vec3 translation;
+  uint paletteSize;
 };
 
 layout (std430, binding = 0) readonly buffer SVDAGindicesSSBO {
@@ -29,6 +37,8 @@ layout (std430, binding = 2) readonly buffer MetadataSSBO {
   Metadata bMetadata[];
 };
 
+uniform sampler2DArray texArray;
+
 uniform vec3 uCamPos;
 uniform mat4 uProjViewInv;
 uniform float uInverseNear;
@@ -39,8 +49,8 @@ uniform uint uNumOctrees;
 
 vec3 getDirection();
 uint toChildIndex(vec3 pPos);
-vec3 advanceRay(vec3 pOrigin, vec3 pDirection, vec3 pDirectionInv, vec3 pNodeOrigin, uint pNodeSize, inout ivec3 pNormal, inout float pDepth);
-uint traverse(uint pRootIndex, uint pMidpoint, uint pSize, vec3 pOrigin, vec3 pDirection, vec3 pDirectionInv, inout ivec3 pNormal, inout float pDepth, inout float pAdvanceCount);
+vec3 advanceRay(vec3 pOrigin, vec3 pDirection, vec3 pDirectionInv, vec3 pNodeOrigin, uint pNodeSize, inout ivec3 pNormal, inout float pDepth, inout vec2 pTexCoord);
+uint traverse(uint pRootIndex, uint pMidpoint, uint pSize, vec3 pOrigin, vec3 pDirection, vec3 pDirectionInv, inout ivec3 pNormal, inout float pDepth, inout float pAdvanceCount, inout vec2 pTexCoord);
 
 void main() {
   vec3 direction = normalize(getDirection());
@@ -48,10 +58,15 @@ void main() {
   ivec3 normal = {0, 0, 0};
   float depth = 0;
   float advanceCount = 0;
+  vec2 texCoord = {0, 0};
+
+  depth = ((1/uFar) - uInverseNear) * uInverseFrustumDepth;
+  imageStore(imgOut, ivec2(gl_GlobalInvocationID.xy), vec4(0.1f, 0.1f, 0.1f, depth));
+  float smallestDepth = depth;
 
   VoxelData v = bData[0];
-  v.color.a = ((1/uFar) - uInverseNear) * uInverseFrustumDepth;
-  imageStore(imgOut, ivec2(gl_GlobalInvocationID.xy), v.color);
+  // v.color.a = ((1/uFar) - uInverseNear) * uInverseFrustumDepth;
+  // imageStore(imgOut, ivec2(gl_GlobalInvocationID.xy), v.color);
 
   vec3 light = {0.5, 0.1, 0.76};
 
@@ -59,22 +74,45 @@ void main() {
     vec3 camPos = uCamPos;
     camPos -= bMetadata[i].translation.xyz;
 
-    uint index = traverse(bMetadata[i].indicesIndex, bMetadata[i].midpoint, bMetadata[i].size, camPos, direction, directionInv, normal, depth, advanceCount);
+    uint index = traverse(bMetadata[i].indicesIndex, bMetadata[i].midpoint, bMetadata[i].size, camPos, direction, directionInv, normal, depth, advanceCount, texCoord);
 
     if (index != 0) {
-      v = bData[index];
+      v = bData[bMetadata[i].paletteIndex + index - 1];
 
-      v.color.a = ((1/depth) - uInverseNear) * uInverseFrustumDepth;
-      if (v.color.a >= imageLoad(imgOut, ivec2(gl_GlobalInvocationID.xy)).a)
+      depth = ((1/depth) - uInverseNear) * uInverseFrustumDepth;
+      if (depth >= smallestDepth)
         continue;
+      smallestDepth = depth;
 
-      float brightness = (dot(light, normal) + 1) / 2;
+      float brightness = 0.5 + (dot(light, normal) + 1) / 4;
 
-      v.color.r = min(1, max(0, v.color.r * brightness));
-      v.color.g = min(1, max(0, v.color.g * brightness));
-      v.color.b = min(1, max(0, v.color.b * brightness));
+      vec4 col;
+      if (normal.y == 0)
+        col = texture(texArray, vec3(texCoord, max(0, min(bMetadata[i].paletteSize - 1, floor(v.texSideIndex + 0.5)))));
+      else if (normal.y == 1)
+        col = texture(texArray, vec3(texCoord, max(0, min(bMetadata[i].paletteSize - 1, floor(v.texTopIndex + 0.5)))));
+      else
+        col = texture(texArray, vec3(texCoord, max(0, min(bMetadata[i].paletteSize - 1, floor(v.texBottomIndex + 0.5)))));
+      // vec4 col = vec4(texCoord, 1, 1);
+      col.r = min(1, max(0, col.r * brightness));
+      col.g = min(1, max(0, col.g * brightness));
+      col.b = min(1, max(0, col.b * brightness));
+      col.a = depth;
 
-      imageStore(imgOut, ivec2(gl_GlobalInvocationID.xy), v.color);
+      imageStore(imgOut, ivec2(gl_GlobalInvocationID.xy), col);
+      // v = bData[bMetadata[i].dataIndex + index];
+
+      // v.color.a = ((1/depth) - uInverseNear) * uInverseFrustumDepth;
+      // if (v.color.a >= imageLoad(imgOut, ivec2(gl_GlobalInvocationID.xy)).a)
+      //   continue;
+
+      // float brightness = (dot(light, normal) + 1) / 2;
+
+      // v.color.r = min(1, max(0, v.color.r * brightness));
+      // v.color.g = min(1, max(0, v.color.g * brightness));
+      // v.color.b = min(1, max(0, v.color.b * brightness));
+
+      // imageStore(imgOut, ivec2(gl_GlobalInvocationID.xy), v.color);
     }
   }
 }
@@ -94,7 +132,7 @@ uint toChildIndex(vec3 pPos) {
   return (localChildPos.x << 0) | (localChildPos.y << 1) | (localChildPos.z << 2); // Index in childIndices 0 - 7
 }
 
-vec3 advanceRay(vec3 pOrigin, vec3 pDirection, vec3 pDirectionInv, vec3 pNodeOrigin, uint pNodeSize, inout ivec3 pNormal, inout float pDepth) {
+vec3 advanceRay(vec3 pOrigin, vec3 pDirection, vec3 pDirectionInv, vec3 pNodeOrigin, uint pNodeSize, inout ivec3 pNormal, inout float pDepth, inout vec2 pTexCoord) {
   float planeX = pNodeOrigin.x + pNodeSize*max(0.f, sign(pDirectionInv.x));
   float tx = (planeX - pOrigin.x) * pDirectionInv.x;
 
@@ -123,6 +161,19 @@ vec3 advanceRay(vec3 pOrigin, vec3 pDirection, vec3 pDirectionInv, vec3 pNodeOri
   else
     pos.z = pDirection.z * tmin + pOrigin.z;
 
+  if (tmin == tx) {
+    pTexCoord.x = pos.z - floor(pos.z);
+    pTexCoord.y = 1 - (pos.y - floor(pos.y));
+  }
+  if (tmin == ty) {
+    pTexCoord.x = pos.x - floor(pos.x);
+    pTexCoord.y = pos.z - floor(pos.z);
+  }
+  if (tmin == tz) {
+    pTexCoord.x = pos.x - floor(pos.x);
+    pTexCoord.y = 1 - (pos.y - floor(pos.y));
+  }
+
   pNormal.x = int(sign(pDirectionInv.x)) * -int(pos.x == planeX);
   pNormal.y = int(sign(pDirectionInv.y)) * -int(pos.y == planeY);
   pNormal.z = int(sign(pDirectionInv.z)) * -int(pos.z == planeZ);
@@ -132,7 +183,7 @@ vec3 advanceRay(vec3 pOrigin, vec3 pDirection, vec3 pDirectionInv, vec3 pNodeOri
   return pos;
 }
 
-vec3 aabbIntersection(uint pSize, vec3 pOrigin, vec3 pDirection, vec3 pDirectionInv, float pMin, float pMax, inout ivec3 pNormal, inout float pDepth) {
+vec3 aabbIntersection(uint pSize, vec3 pOrigin, vec3 pDirection, vec3 pDirectionInv, float pMin, float pMax, inout ivec3 pNormal, inout float pDepth, inout vec2 pTexCoord) {
   float tx1 = (pMin - pOrigin.x) * pDirectionInv.x;
   float tx2 = (pMax - pOrigin.x) * pDirectionInv.x;
 
@@ -153,6 +204,18 @@ vec3 aabbIntersection(uint pSize, vec3 pOrigin, vec3 pDirection, vec3 pDirection
 
   if (tmin >= 0 && tmax >= tmin) {
     vec3 pos = {pDirection.x * tmin + pOrigin.x, pDirection.y * tmin + pOrigin.y, pDirection.z * tmin + pOrigin.z}; // Calculate intersection
+    if (tmin == tx1 || tmin == tx2) {
+      pTexCoord.x = pos.z - floor(pos.z);
+      pTexCoord.y = 1 - (pos.y - floor(pos.y));
+    }
+    if (tmin == ty1 || tmin == ty2) {
+      pTexCoord.x = pos.x - floor(pos.x);
+      pTexCoord.y = pos.z - floor(pos.z);
+    }
+    if (tmin == tz1 || tmin == tz2) {
+      pTexCoord.x = pos.x - floor(pos.x);
+      pTexCoord.y = 1 - (pos.y - floor(pos.y));
+    }
     // vec3 pos = {0, 0, 0};
 
     // if (tmin != tx1 && tmin != tx1)
@@ -197,10 +260,14 @@ vec3 aabbIntersection(uint pSize, vec3 pOrigin, vec3 pDirection, vec3 pDirection
   }
 }
 
-uint traverse(uint pRootIndex, uint pMidpoint, uint pSize, vec3 pOrigin, vec3 pDirection, vec3 pDirectionInv, inout ivec3 pNormal, inout float pDepth, inout float pAdvanceCount) {
+uint traverse(uint pRootIndex, uint pMidpoint, uint pSize, vec3 pOrigin, vec3 pDirection, vec3 pDirectionInv, inout ivec3 pNormal, inout float pDepth, inout float pAdvanceCount, inout vec2 pTexCoord) {
+
+  pTexCoord = vec2(0, 0); // Temporary code
+  pDepth = 0;
+
   if (pOrigin.x > pSize || pOrigin.x < 0 || pOrigin.y > pSize || pOrigin.y < 0 || pOrigin.z > pSize || pOrigin.z < 0) {
     // Ray origin not inside the grid, carry out aabb intersection
-    pOrigin = aabbIntersection(pSize, pOrigin, pDirection, pDirectionInv, 0, pSize, pNormal, pDepth);
+    pOrigin = aabbIntersection(pSize, pOrigin, pDirection, pDirectionInv, 0, pSize, pNormal, pDepth, pTexCoord);
     if (pOrigin.x < 0) // pOrigin == vec3(-1, -1, -1)
       return 0;
     if ((pOrigin.x == 0 && pDirection.x < 0) ||
@@ -225,7 +292,7 @@ uint traverse(uint pRootIndex, uint pMidpoint, uint pSize, vec3 pOrigin, vec3 pD
     // Advance ray if voxel is air
     if (currentNode.index - pRootIndex == pMidpoint) {
       // ++pAdvanceCount;
-      pOrigin = advanceRay(pOrigin, pDirection, pDirectionInv, currentNode.origin, currentNodeSize, pNormal, pDepth);
+      pOrigin = advanceRay(pOrigin, pDirection, pDirectionInv, currentNode.origin, currentNodeSize, pNormal, pDepth, pTexCoord);
       if ((pOrigin.x <= 0 && pDirection.x < 0) ||
           (pOrigin.x >= pSize && pDirection.x > 0) ||
           (pOrigin.y <= 0 && pDirection.y < 0) ||
