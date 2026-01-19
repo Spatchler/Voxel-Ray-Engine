@@ -1,5 +1,7 @@
 #include "RTVE.hpp"
 
+#include <thread_pool/thread_pool.h>
+
 #include "chunk.hpp"
 
 int main() {
@@ -17,23 +19,40 @@ int main() {
                         "sandbox/res/skybox/back.jpeg"    });
   camera.attachSkybox(&skybox);
 
+  RTVE::Palette palette({ "sandbox/res/textures/grass_block_top.png",
+                          "sandbox/res/textures/grass_block_side.png",
+                          "sandbox/res/textures/dirt.png",
+                          "sandbox/res/textures/water_still.png",
+                          "sandbox/res/textures/oak_log_top.png",
+                          "sandbox/res/textures/oak_log.png"  }, {16, 16},
+                        { {2,2,2}, {0,1,2}, {3,3,3}, {4,5,4} });
+  // palette.add({glm::vec4( 0.1f,  0.1f,  0.1f, 0.f)}); // Air
+  // palette.add({glm::vec4(0.07f, 0.63f, 0.18f, 0.f)}); // Grass
+  // palette.add({glm::vec4(0.28f, 0.59f, 1.00f, 0.f)}); // Water
+  // palette.add({glm::vec4(0.37f, 0.18f, 0.14f, 0.f)}); // Wood
+  uint paletteIndex = camera.attachPalette(&palette);
+
   // RTVE::SparseVoxelDAG model("sandbox/res/outS.bin");
   // RTVE::SparseVoxelDAG model("sandbox/res/test.bin");
   // RTVE::SparseVoxelDAG model("sandbox/res/testC.bin");
   // RTVE::SparseVoxelDAG model("sandbox/res/highres.bin");
 
-  std::vector<Chunk> chunks;
-  // chunks.reserve(10000); // So pointers dont change
-  int renderDistance = 10;
-  for (int x = -renderDistance; x <= renderDistance; ++x) {
-    for (int y = -renderDistance; y <= renderDistance; ++y) {
-      if (x*x + y*y < renderDistance)
-        chunks.push_back(glm::ivec2(x, y));
+  dp::thread_pool threadPool(4);
+
+  std::vector<Chunk*> chunks;
+  uint attachedChunksCount = 0;
+  int renderDistance = 4;
+  int renderDistance2 = renderDistance*renderDistance;
+  for (glm::ivec2 chunkPos(-renderDistance, -renderDistance); chunkPos.x <= renderDistance; ++chunkPos.x) {
+    for (chunkPos.y = -renderDistance; chunkPos.y <= renderDistance; ++chunkPos.y) {
+      if (glm::length2(glm::vec2(chunkPos)) < renderDistance2) {
+        threadPool.enqueue_detach([&chunks, chunkPos]() {
+          Chunk* ptr = new Chunk(chunkPos);
+          chunks.push_back(ptr);
+        });
+      }
     }
   }
-  // chunks.emplace_back(glm::ivec2(0, 0));
-  for (uint i = 0; i < chunks.size(); ++i)
-    camera.attachSparseVoxelDAG(&chunks.at(i).mSVDAG);
   
   camera.mPos = glm::vec3(0, 0, 0);
   camera.setDirection(0, 0);
@@ -67,6 +86,9 @@ int main() {
   bool debugRendering = false;
   bool fLastPressed = false;
   while (!window.shouldWindowClose()) {
+    for (uint i = attachedChunksCount; i < chunks.size(); ++i, ++attachedChunksCount)
+      camera.attachSparseVoxelDAG(&chunks.at(i)->mSVDAG, paletteIndex, palette.getSize());
+
     float currentFrame = window.getTime();
     deltaTime = currentFrame - lastFrame;
     lastFrame = currentFrame;
@@ -112,6 +134,9 @@ int main() {
   }
 
   // chunk.mSVDAG.releaseDebugMesh();
+  threadPool.wait_for_tasks();
+  for (uint i = 0; i < chunks.size(); ++i)
+    delete chunks.at(i);
   skybox.release();
 }
 

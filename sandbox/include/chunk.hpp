@@ -23,11 +23,12 @@ protected:
 
   glm::ivec2 mOffset;
   glm::ivec2 mChunkPos;
-  static constexpr float sScale    = CHUNK_SIZE;
-  static constexpr float sLacunarity    = 1.99f;
-  static constexpr float sPersistance   = 0.5f;
-  static constexpr float sYOffset = 1.f;
+  float sScale    = CHUNK_SIZE;
+  float sLacunarity    = 1.99f;
+  float sPersistance   = 0.5f;
+  float sYOffset = 0.5f;
 
-  static SimplexNoise sSimplex;
-  static const int sOctaves = static_cast<int>(5 + std::log(sScale));
+  // SimplexNoise sSimplex;
+  SimplexNoise sSimplex = SimplexNoise(0.1f/sScale, 0.5f, sLacunarity, sPersistance);
+  const int sOctaves = static_cast<int>(5 + std::log(sScale));
 };
