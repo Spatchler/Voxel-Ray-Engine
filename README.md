@@ -1,7 +1,8 @@
 # Voxel Ray Engine
 
-![](.github/sponza1.png)
-![](.github/sponza2.png)
+![](.github/sponza2048.png)
+![](.github/dragon2048.png)
+![](.github/bunny2048.png)
 
 THIS IS VERY MUCH A WORK IN PROGRESS.
 
