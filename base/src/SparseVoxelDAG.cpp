@@ -1,17 +1,17 @@
 #include "SparseVoxelDAG.hpp"
 
 RTVE::SparseVoxelDAG::SparseVoxelDAG(uint pSize)
-:mSize(pSize), mMaxDepth(std::log2(pSize)), mMidpoint(UINT_MAX / 2) {
+:mSize(pSize), mMaxDepth(std::log2(pSize)), mMidpoint(UINT_MAX - 4) {
   mIndices.push_back({mMidpoint, mMidpoint, mMidpoint, mMidpoint, mMidpoint, mMidpoint, mMidpoint, mMidpoint});
 }
 
 RTVE::SparseVoxelDAG::SparseVoxelDAG(const std::string& pPath)
-:mMidpoint(UINT_MAX / 2) {
+:mMidpoint(UINT_MAX - 4) {
   loadFromFile(pPath);
 }
 
 RTVE::SparseVoxelDAG::SparseVoxelDAG(const std::vector<std::vector<std::vector<uint32_t>>>& pGrid)
-:mSize(pGrid.size()), mMaxDepth(std::log2(mSize)), mMidpoint(UINT_MAX / 2) {
+:mSize(pGrid.size()), mMaxDepth(std::log2(mSize)), mMidpoint(UINT_MAX - 4) {
   std::vector<std::tuple<uint, uint, glm::vec3, uint>> queue;
 
   {
@@ -43,9 +43,8 @@ const glm::vec3& RTVE::SparseVoxelDAG::getTranslation() {
 void RTVE::SparseVoxelDAG::print() {
   std::println("\n------------------------------------");
   std::println("Indices:");
-  for (auto node: mIndices) {
+  for (auto node: mIndices)
     std::println("{}, {}, {}, {}, {}, {}, {}, {}", node[0], node[1], node[2], node[3], node[4], node[5], node[6], node[7]);
-  }
   std::println("Size: {}", mSize);
   std::println("------------------------------------\n");
 }
@@ -126,29 +125,24 @@ void RTVE::SparseVoxelDAG::loadFromFile(const std::string& pPath) {
   fin.open(pPath, std::ios::binary | std::ios::in);
 
   // Read resolution
-  uint resolution;
-  fin.read(reinterpret_cast<char*>(&resolution), 4);
-  mSize = resolution;
+  fin.read(reinterpret_cast<char*>(&mSize), 4);
   mMaxDepth = std::log2(mSize);
 
+  // Read num indices
+  uint32_t numIndices;
+  fin.read(reinterpret_cast<char*>(&numIndices), 4);
+
   // Load indices
-  mIndices.clear();
-  uint32_t value;
-  uint i = 0;
-  std::array<uint32_t, 8> node;
-  while (fin.read(reinterpret_cast<char*>(&value), sizeof(uint32_t))) {
-    if (value == 0)
-      node[i] = mMidpoint;
-    else if (value == 1)
-      node[i] = mMidpoint + 1;
-    else
-      node[i] = value - 2;
-    ++i;
-    if (i == 8) {
-      mIndices.push_back(node);
-      i = 0;
-    }
+  mIndices.resize(numIndices);
+  if (!fin.read(reinterpret_cast<char*>(&mIndices[0]), sizeof(mIndices[0]) * mIndices.size()))
+    std::println("ERROR READING INDICES: Corrupted indices count");
+  for (uint i = 0; i < numIndices; ++i) for (uint8_t j = 0; j < 8; ++j) {
+    uint32_t& n = mIndices[i][j];
+    if (n <= 1) n += mMidpoint;
+    else n -= 2;
   }
+
+  std::println("indices.size: {}", mIndices.size());
 }
 
 uint RTVE::SparseVoxelDAG::generateSVDAGTopDown(const std::vector<std::vector<std::vector<uint32_t>>>& pGrid, glm::vec3 pNodeOrigin, uint pNodeSize, std::vector<std::tuple<uint, uint, glm::vec3, uint>>& pQueue) {
@@ -158,14 +152,12 @@ uint RTVE::SparseVoxelDAG::generateSVDAGTopDown(const std::vector<std::vector<st
   bool allSame = true;
   uint volume = pNodeSize * pNodeSize * pNodeSize;
 
-  for (uint x = pNodeOrigin.x; x < (pNodeOrigin.x + pNodeSize) && allSame; ++x) {
-    for (uint y = pNodeOrigin.y; (y < pNodeOrigin.y + pNodeSize) && allSame; ++y) {
+  for (uint x = pNodeOrigin.x; x < (pNodeOrigin.x + pNodeSize) && allSame; ++x)
+    for (uint y = pNodeOrigin.y; (y < pNodeOrigin.y + pNodeSize) && allSame; ++y)
       for (uint z = pNodeOrigin.z; (z < pNodeOrigin.z + pNodeSize) && allSame; ++z) {
         const uint32_t& v = pGrid[x][y][z];
         allSame = firstVoxel == v;
       }
-    }
-  }
 
   if (allSame)
     return mMidpoint + firstVoxel;
@@ -260,8 +252,7 @@ void RTVE::SparseVoxelDAG::insertCubeVertices(std::vector<glm::vec3>& pVertices,
     0.f, 0.f, 1.f
   };
 
-  for (uint i = 0; i < sizeof(vertices) / (3*sizeof(float)); ++i) {
+  for (uint i = 0; i < sizeof(vertices) / (3*sizeof(float)); ++i)
     pVertices.push_back(glm::vec3(vertices[i*3], vertices[i*3+1], vertices[i*3+2]) * (pScale / mSize) + (pPos / (float)mSize));
-  }
 }
 
