@@ -1,6 +1,6 @@
 # Voxel Ray Engine
 
-![](.github/dragonShadows.png)
+![](.github/dragonShadows3.png)
 ![](.github/sponza2048.png)
 ![](.github/dragon2048.png)
 ![](.github/bunny2048.png)
