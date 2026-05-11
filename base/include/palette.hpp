@@ -4,33 +4,36 @@
 #include <string>
 #include <print>
 #include <cstring>
+#include <sstream>
+#include <fstream>
 
 #include <glm/glm.hpp>
 #include <glad/glad.h>
 #include <stb_image.h>
 
 namespace RTVE {
-  // struct VoxelData {
-  //   glm::vec4 color;
-  // };
+  struct ColourVoxelData {
+    glm::vec4 color;
+  };
+  
+  constexpr bool operator==(const ColourVoxelData& lhs, const ColourVoxelData& rhs) {
+    return lhs.color == rhs.color;
+  }
+
   #pragma pack(1)
-  struct VoxelData {
+  struct TextureVoxelData {
     uint32_t texTopIndex;
-    uint32_t texSideIndex;
     uint32_t texBottomIndex;
-    // uint32_t padding;
+    uint32_t texNSideIndex;
+    uint32_t texSSideIndex;
+    uint32_t texESideIndex;
+    uint32_t texWSideIndex;
   };
   #pragma pack()
   
-  // constexpr bool operator==(const VoxelData& lhs, const VoxelData& rhs) {
-  //   return lhs.color == rhs.color;
-  // }
-  
-  class Palette {
+  class TexturePalette {
   public:
-    Palette(std::vector<std::string> pPaths, glm::ivec2 pTexSize, std::vector<VoxelData> pData);
-
-    // void add(VoxelData pItem);
+    TexturePalette(std::vector<std::string> pPaths, glm::ivec2 pTexSize, std::vector<TextureVoxelData> pData);
 
     constexpr uint getSize() {
       return mNumTextures;
@@ -38,10 +41,24 @@ namespace RTVE {
 
     GLuint getTexID();
 
-    VoxelData* getStart();
+    TextureVoxelData* getStart();
   private:
     GLuint mTexID;
     uint mNumTextures;
-    std::vector<VoxelData> mData;
+    std::vector<TextureVoxelData> mData;
+  };
+
+  class ColourPalette {
+  public:
+    ColourPalette(std::vector<ColourVoxelData> pData);
+    ColourPalette(const std::string& pPath);
+
+    constexpr uint getSize() {
+      return mData.size();
+    }
+
+    ColourVoxelData* getStart();
+  private:
+    std::vector<ColourVoxelData> mData;
   };
 }

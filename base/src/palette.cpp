@@ -1,6 +1,6 @@
 #include "palette.hpp"
 
-RTVE::Palette::Palette(std::vector<std::string> pPaths, glm::ivec2 pTexSize, std::vector<VoxelData> pData)
+RTVE::TexturePalette::TexturePalette(std::vector<std::string> pPaths, glm::ivec2 pTexSize, std::vector<TextureVoxelData> pData)
 :mData(pData), mNumTextures(pPaths.size()) {
   std::vector<uint8_t> texData;
   // std::println();
@@ -31,15 +31,50 @@ RTVE::Palette::Palette(std::vector<std::string> pPaths, glm::ivec2 pTexSize, std
   glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 }
 
-GLuint RTVE::Palette::getTexID() {
+GLuint RTVE::TexturePalette::getTexID() {
   return mTexID;
 }
 
-// void RTVE::Palette::add(RTVE::VoxelData pItem) {
-//   mData.emplace_back(pItem);
-// }
+RTVE::TextureVoxelData* RTVE::TexturePalette::getStart() {
+  return &mData.at(0);
+}
 
-RTVE::VoxelData* RTVE::Palette::getStart() {
+RTVE::ColourPalette::ColourPalette(std::vector<RTVE::ColourVoxelData> pData)
+:mData(pData) {
+}
+
+RTVE::ColourPalette::ColourPalette(const std::string& pPath) {
+  // Open
+  std::ifstream fin;
+  fin.open(pPath, std::ios::binary | std::ios::in);
+  if (!fin.is_open()) throw std::invalid_argument("Could not open input palette file");
+  // Read
+  uint numColours;
+  std::string line;
+  std::getline(fin, line);
+  if (line != "JASC-PAL") throw std::invalid_argument("Palette file incorrect format");
+  std::getline(fin, line);
+  if (line != "0100") throw std::invalid_argument("Palette file incorrect format version");
+  std::getline(fin, line);
+  numColours = std::stoi(line);
+  mData.resize(numColours);
+  uint count = 0;
+  for (; std::getline(fin, line) && (count < numColours); ++count) {
+    std::stringstream s;
+    s << line;
+    RTVE::ColourVoxelData& c = mData.at(count);
+    std::string componentStr;
+    for (uint i = 0; i < 3; ++i) {
+      std::getline(s, componentStr, ' ');
+      c.color[i] = std::stoi(componentStr) / 255.f;
+    }
+  }
+  if (count != numColours) throw std::overflow_error("Palette file invalid number of colours");
+  // Close
+  fin.close();
+}
+
+RTVE::ColourVoxelData* RTVE::ColourPalette::getStart() {
   return &mData.at(0);
 }
 
