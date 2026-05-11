@@ -13,14 +13,12 @@ namespace RTVE {
     uint32_t index;
   };
 
-  // Enabe tight packing
   #pragma pack(1)
   struct Metadata {
     uint32_t indicesIndex, midpoint, size, paletteIndex;
     glm::tvec3<float> translation;
     uint32_t paletteSize;
   };
-  // Reset packing
   #pragma pack()
 
   class Camera {
@@ -44,8 +42,10 @@ namespace RTVE {
     void render();
     void debugRender(Window& pWindow);
     
-    uint attachPalette(Palette* pPalette);
-    void attachSparseVoxelDAG(SparseVoxelDAG* pSVDAG, uint32_t pPaletteOffset, uint32_t pPaletteSize);
+    void attachTexturePalette(TexturePalette* pPalette);
+    void attachColourPalette(ColourPalette* pPalette);
+    void attachSparseVoxelDAG(SparseVoxelDAG* pSVDAG);
+    void detachSparseVoxelDAG(SparseVoxelDAG* pSVDAG);
     void attachSkybox(Skybox* pSkybox);
     void detachSkybox();
 
@@ -70,16 +70,18 @@ namespace RTVE {
     std::vector<SparseVoxelDAG*> mSVDAGs;
     std::vector<Metadata> mSVDAGMetadata;
 
-    Palette* mPalette;
+    TexturePalette* mTexturePalette;
+    ColourPalette* mColourPalette;
     Skybox* mSkybox;
 
-    ComputeShader mSVDAGShader;
+    ComputeShader mSVDAGTexturedShader, mSVDAGColouredShader;
     Shader mScreenShader, mSkyboxShader;
     uint mComputeTexture;
     uint mScreenVAO, mScreenVBO;
-    uint mIndicesBufferSize = 0, mMetadataBufferSize = 0, mDataBufferSize = 0;
-    uint mIndicesBufferSizeBytes = 0, mDataBufferSizeBytes = 0, mMetadataBufferSizeBytes = 0;
-    uint mSVDAGindicesSSBO, mSVDAGdataSSBO, mMetadataSSBO;
+    uint mIndicesBufferSize = 0, mMetadataBufferSize = 0, mColourDataBufferSize = 0;
+    uint64_t mIndicesBufferSizeBytes = 0;
+    uint mColourDataBufferSizeBytes = 0, mMetadataBufferSizeBytes = 0;
+    uint mSVDAGindicesSSBO, mSVDAGtextureDataSSBO, mSVDAGcolourDataSSBO, mMetadataSSBO;
 #ifdef _DEBUG
     Shader mDebugShader;
 #endif
