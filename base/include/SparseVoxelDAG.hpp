@@ -5,6 +5,7 @@
 
 #include <vector>
 #include <print>
+#include <limits>
 #include <algorithm>
 
 #include <glad/glad.h>
@@ -55,7 +56,7 @@ namespace RTVE {
 
     glm::vec3 mTranslation{0, 0, 0};
 
-    uint mSize, mMaxDepth, mMidpoint;
+    uint32_t mSize, mMaxDepth, mMidpoint, mPaletteSize;
 #ifdef _DEBUG
     uint mDebugVAO, mDebugVBO;
 #endif

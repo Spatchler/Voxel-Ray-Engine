@@ -5,8 +5,7 @@ RTVE::SparseVoxelDAG::SparseVoxelDAG(uint pSize)
   mIndices.push_back({mMidpoint, mMidpoint, mMidpoint, mMidpoint, mMidpoint, mMidpoint, mMidpoint, mMidpoint});
 }
 
-RTVE::SparseVoxelDAG::SparseVoxelDAG(const std::string& pPath)
-:mMidpoint(UINT_MAX - 4) {
+RTVE::SparseVoxelDAG::SparseVoxelDAG(const std::string& pPath) {
   loadFromFile(pPath);
 }
 
@@ -124,25 +123,41 @@ void RTVE::SparseVoxelDAG::loadFromFile(const std::string& pPath) {
   std::ifstream fin;
   fin.open(pPath, std::ios::binary | std::ios::in);
 
+  // Read header
+  std::string line;
+  std::getline(fin, line);
+  if (line != "VMeshOctree") throw std::invalid_argument("Octree file incorrect format");
+  std::getline(fin, line);
+  if (line != "0100") throw std::invalid_argument("Octree file incorrect format version");
+
   // Read resolution
   fin.read(reinterpret_cast<char*>(&mSize), 4);
   mMaxDepth = std::log2(mSize);
 
+  // Read palette size
+  fin.read(reinterpret_cast<char*>(&mPaletteSize), 4);
+  mMidpoint = std::numeric_limits<uint32_t>::max() - mPaletteSize;
+  
   // Read num indices
   uint32_t numIndices;
   fin.read(reinterpret_cast<char*>(&numIndices), 4);
 
+  std::println("Loading {} indices", numIndices);
+
   // Load indices
   mIndices.resize(numIndices);
-  if (!fin.read(reinterpret_cast<char*>(&mIndices[0]), sizeof(mIndices[0]) * mIndices.size()))
-    std::println("ERROR READING INDICES: Corrupted indices count");
-  for (uint i = 0; i < numIndices; ++i) for (uint8_t j = 0; j < 8; ++j) {
-    uint32_t& n = mIndices[i][j];
-    if (n <= 1) n += mMidpoint;
-    else n -= 2;
-  }
+  if (!fin.read(reinterpret_cast<char*>(mIndices.data()), sizeof(mIndices.at(0)) * mIndices.size()))
+    std::println("ERROR READING INDICES: Corrupted indices count, too big");
+  char c;
+  if (fin.read(&c, 1))
+    std::println("ERROR READING INDICES: Corrupted indices count, too small");
 
-  std::println("indices.size: {}", mIndices.size());
+  fin.close();
+  // for (uint i = 0; i < numIndices; ++i) for (uint8_t j = 0; j < 8; ++j) {
+  //   uint32_t& n = mIndices[i][j];
+  //   if (n <= 1) n += mMidpoint;
+  //   else n -= 2;
+  // }
 }
 
 uint RTVE::SparseVoxelDAG::generateSVDAGTopDown(const std::vector<std::vector<std::vector<uint32_t>>>& pGrid, glm::vec3 pNodeOrigin, uint pNodeSize, std::vector<std::tuple<uint, uint, glm::vec3, uint>>& pQueue) {
