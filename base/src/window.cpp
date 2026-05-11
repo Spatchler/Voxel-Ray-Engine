@@ -74,6 +74,14 @@ void RTVE::Window::captureCursor() {
   glfwSetInputMode(mWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 }
 
+void RTVE::Window::uncaptureCursor() {
+  glfwSetInputMode(mWindow, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+}
+
+bool RTVE::Window::isCursorCaptured() {
+  return glfwGetInputMode(mWindow, GLFW_CURSOR) == GLFW_CURSOR_DISABLED;
+}
+
 int RTVE::Window::getKeyGLFW(int pKey) {
   return glfwGetKey(mWindow, pKey);
 }

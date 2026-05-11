@@ -26,6 +26,8 @@ namespace RTVE {
     void swapBuffers();
     void pollEvents();
     void captureCursor();
+    void uncaptureCursor();
+    bool isCursorCaptured();
 
     int getKeyGLFW(int pKey);
 
