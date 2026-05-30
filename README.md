@@ -1,8 +1,9 @@
 # Voxel Ray Engine
 
-![](.github/firstColourTest1.png)
-![](.github/firstColourTest2.png)
-![](.github/dragonShadows3.png)
+![](.github/sponza2TextureIssueShadows.png)
+![](.github/sponza1TextureIssueShadows.png)
+![](.github/Sponza2TextureIssue.png)
+![](.github/Sponza1TextureIssue.png)
 
 THIS IS VERY MUCH A WORK IN PROGRESS.
 
