@@ -6,7 +6,8 @@
 
 #include "chunk.hpp"
 
-int main() {
+int main(int argc, char* argv[]) {
+  if (argc < 2) throw std::invalid_argument("No path provided");
   RTVE::Window& window = RTVE::Window::get();
   window.init("RTVE Demo");
   window.captureCursor();
@@ -34,10 +35,14 @@ int main() {
   //                               {glm::vec4(0.32f, 0.65f, 0.20f, 0.f)},
   //                               {glm::vec4(0.28f, 0.59f, 1.00f, 0.f)},
   //                               {glm::vec4(0.45f, 0.35f, 0.21f, 0.f)} });
-  RTVE::ColourPalette palette("sponza.pal");
+  std::string palettePath = argv[1];
+  palettePath.append(".pal");
+  std::string modelPath = argv[1];
+  modelPath.append(".vm8");
+  RTVE::ColourPalette palette(palettePath);
   camera.attachColourPalette(&palette);
 
-  RTVE::SparseVoxelDAG model("sponza.sv8");
+  RTVE::SparseVoxelDAG model(modelPath);
   // RTVE::SparseVoxelDAG model("sandbox/res/test.bin");
   // RTVE::SparseVoxelDAG model("sandbox/res/testC.bin");
   // RTVE::SparseVoxelDAG model("sandbox/res/highres.bin");
