@@ -124,11 +124,13 @@ void RTVE::SparseVoxelDAG::loadFromFile(const std::string& pPath) {
   fin.open(pPath, std::ios::binary | std::ios::in);
 
   // Read header
-  std::string line;
-  std::getline(fin, line);
-  if (line != "VMeshOctree") throw std::invalid_argument("Octree file incorrect format");
-  std::getline(fin, line);
-  if (line != "0100") throw std::invalid_argument("Octree file incorrect format version");
+  std::string str;
+  str.resize(6);
+  fin.read(str.data(), 6);
+  if (str != "VMESH8") throw std::invalid_argument("Octree file not VMESH8 format");
+  uint32_t ver;
+  fin.read(reinterpret_cast<char*>(&ver), sizeof(ver));
+  if (ver != 100) throw std::invalid_argument("Octree file not 1.0.0 version");
 
   // Read resolution
   fin.read(reinterpret_cast<char*>(&mSize), 4);
