@@ -1,9 +1,6 @@
 # Voxel Ray Engine
 
-![](.github/sponza2TextureIssueShadows.png)
-![](.github/sponza1TextureIssueShadows.png)
-![](.github/Sponza2TextureIssue.png)
-![](.github/Sponza1TextureIssue.png)
+![](.github/sponzaTextureIssueFixed.png)
 
 THIS IS VERY MUCH A WORK IN PROGRESS.
 
