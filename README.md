@@ -1,6 +1,7 @@
 # Voxel Ray Engine
 
 ![](.github/sponzaTextureIssueFixed.png)
+![](.github/sibenikNoTextureIssue.png)
 
 A Sparse Voxel DAG ray caster for [VMesh-CLI](https://github.com/Spatchler/VMesh-CLI) vm8 files written in C++ with OpenGL.
 
