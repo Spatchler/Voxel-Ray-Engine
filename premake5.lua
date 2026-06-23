@@ -44,15 +44,15 @@ project "sandbox"
         "sandbox/src/**.cpp",
         "sandbox/include/**.hpp",
         "sandbox/include/**.cpp",
-        "sandbox/deps/src/**.cpp",
-        "sandbox/deps/src/**.c",
-        "sandbox/deps/include/**.h",
-        "sandbox/deps/include/**.hpp"
+        "dependencies/src/**.cpp",
+        "dependencies/src/**.c",
+        "dependencies/include/**.h",
+        "dependencies/include/**.hpp"
     }
 
     includedirs {
         "sandbox/include",
-        "sandbox/deps/include",
+        "dependencies/include",
         "base/include"
         --"/usr/include"
     }
@@ -66,7 +66,7 @@ project "sandbox"
     }
 
     libdirs {
-        "sandbox/deps/libs",
+        "dependencies/libs",
         "base/bin/" .. outputdir
         --"/usr/lib"
     }
@@ -88,15 +88,15 @@ project "base"
         "base/src/**.cpp",
         "base/include/**.hpp",
         "base/include/**.cpp",
-        "base/deps/src/**.cpp",
-        "base/deps/src/**.c",
-        "base/deps/include/**.h",
-        "base/deps/include/**.hpp"
+        "dependencies/src/**.cpp",
+        "dependencies/src/**.c",
+        "dependencies/include/**.h",
+        "dependencies/include/**.hpp"
     }
 
     includedirs {
         "base/include",
-        "base/deps/include",
+        "dependencies/include",
         --"/usr/include"
     }
 
@@ -108,7 +108,7 @@ project "base"
     }
 
     libdirs {
-        "base/deps/libs",
+        "dependencies/libs",
         --"/usr/lib"
     }
 

@@ -1,7 +1,7 @@
 #pragma once
 
 #include <glad/glad.h>
-#include <stb_image.h>
+#include <stb/stb_image.h>
 #include <array>
 #include <string>
 #include <print>
