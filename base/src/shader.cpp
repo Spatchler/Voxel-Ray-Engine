@@ -1,10 +1,10 @@
 #include "shader.hpp"
 
-RTVE::Shader::Shader(const std::string& pVertexPath, const std::string& pFragPath) {
+RTVE::Shader::Shader(const std::filesystem::path& pVertexPath, const std::filesystem::path& pFragPath) {
   load(pVertexPath, pFragPath);
 }
 
-void RTVE::Shader::load(const std::string& pVertexPath, const std::string& pFragPath) {
+void RTVE::Shader::load(const std::filesystem::path& pVertexPath, const std::filesystem::path& pFragPath) {
   std::string vCode;
   std::string fCode;
   std::ifstream vShaderFile;

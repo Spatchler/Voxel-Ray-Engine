@@ -5,11 +5,12 @@
 #include <array>
 #include <string>
 #include <print>
+#include <filesystem>
 
 namespace RTVE {
   class Skybox {
   public:
-    Skybox(std::array<std::string, 6> pFaces);
+    Skybox(std::array<std::filesystem::path, 6> pFaces);
 
     void draw();
 
