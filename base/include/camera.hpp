@@ -74,7 +74,7 @@ namespace RTVE {
     ColourPalette* mColourPalette;
     Skybox* mSkybox;
 
-    ComputeShader mSVDAGTexturedShader, mSVDAGColouredShader;
+    ComputeShader mSVDAGColouredShader;
     Shader mScreenShader, mSkyboxShader;
     uint mComputeTexture;
     uint mScreenVAO, mScreenVBO;
