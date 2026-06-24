@@ -14,12 +14,12 @@ int main(int argc, char* argv[]) {
   window.setClearColor(glm::vec4(0.1f, 0.1f, 0.1f, 0.f));
 
   RTVE::Camera camera;
-  RTVE::Skybox skybox({ "sandbox/res/skybox/right.jpeg",
-                        "sandbox/res/skybox/left.jpeg",
-                        "sandbox/res/skybox/top.jpeg",
-                        "sandbox/res/skybox/bottom.jpeg",
-                        "sandbox/res/skybox/front.jpeg",
-                        "sandbox/res/skybox/back.jpeg"    });
+  RTVE::Skybox skybox({ "res/skybox/right.jpeg",
+                        "res/skybox/left.jpeg",
+                        "res/skybox/top.jpeg",
+                        "res/skybox/bottom.jpeg",
+                        "res/skybox/front.jpeg",
+                        "res/skybox/back.jpeg"    });
   camera.attachSkybox(&skybox);
 
   // RTVE::Palette palette({ "sandbox/res/textures/grass_block_top.png",
