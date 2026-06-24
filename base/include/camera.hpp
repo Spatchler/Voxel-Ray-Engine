@@ -6,6 +6,7 @@
 #include "SparseVoxelDAG.hpp"
 #include "skybox.hpp"
 #include "palette.hpp"
+#include "utils.hpp"
 
 namespace RTVE {
   struct Node {

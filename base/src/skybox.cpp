@@ -2,7 +2,7 @@
 
 using namespace RTVE;
 
-Skybox::Skybox(std::array<std::filesystem::path, 6> pFaces) {
+Skybox::Skybox(std::array<Path, 6> pFaces) {
   // Load textures
   glGenTextures(1, &mTexID);
   glBindTexture(GL_TEXTURE_CUBE_MAP, mTexID);

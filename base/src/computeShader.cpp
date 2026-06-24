@@ -2,14 +2,14 @@
 
 using namespace RTVE;
 
-ComputeShader::ComputeShader(const std::string& pPath) {
+ComputeShader::ComputeShader(const Path& pPath) {
   std::string computeCode;
   std::ifstream cShaderFile;
 
   cShaderFile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
   try {
     // Read files
-    cShaderFile.open(pPath);
+    cShaderFile.open(pPath.mPath);
 
     std::stringstream cShaderStream;
     // read file's buffer contents into streams

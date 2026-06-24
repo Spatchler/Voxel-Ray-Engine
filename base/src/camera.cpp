@@ -20,7 +20,7 @@ GLenum glCheckError_(const char* file, int line) {
 #define glCheckError() glCheckError_(__FILE__, __LINE__)
 
 RTVE::Camera::Camera()
-:mSkybox(NULL), mSVDAGColouredShader("shaders/rtvShaderOldColoured.comp"), mScreenShader("shaders/textureShader.vert", "shaders/textureShader.frag"), mSkyboxShader("shaders/skyboxShader.vert", "shaders/skyboxShader.frag"), mDebugShader("shaders/debugShader.vert", "shaders/debugShader.frag"), mWorldUp(0, 1, 0), mPos(0, 0, 0), mScreenSize(512, 512) {
+:mSkybox(NULL), mSVDAGColouredShader({"shaders/rtvShaderOldColoured.comp"}), mScreenShader({"shaders/textureShader.vert"}, {"shaders/textureShader.frag"}), mSkyboxShader({"shaders/skyboxShader.vert"}, {"shaders/skyboxShader.frag"}), mDebugShader({"shaders/debugShader.vert"}, {"shaders/debugShader.frag"}), mWorldUp(0, 1, 0), mPos(0, 0, 0), mScreenSize(512, 512) {
   float vertices[] = {
     // positions  // texture coords
     -1.0f,  1.0f, 0.0f, 1.0f,

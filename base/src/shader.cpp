@@ -1,10 +1,10 @@
 #include "shader.hpp"
 
-RTVE::Shader::Shader(const std::filesystem::path& pVertexPath, const std::filesystem::path& pFragPath) {
+RTVE::Shader::Shader(const Path& pVertexPath, const Path& pFragPath) {
   load(pVertexPath, pFragPath);
 }
 
-void RTVE::Shader::load(const std::filesystem::path& pVertexPath, const std::filesystem::path& pFragPath) {
+void RTVE::Shader::load(const Path& pVertexPath, const Path& pFragPath) {
   std::string vCode;
   std::string fCode;
   std::ifstream vShaderFile;
@@ -15,8 +15,8 @@ void RTVE::Shader::load(const std::filesystem::path& pVertexPath, const std::fil
 
   try {
     // Read files
-    vShaderFile.open(pVertexPath);
-    fShaderFile.open(pFragPath);
+    vShaderFile.open(pVertexPath.mPath);
+    fShaderFile.open(pFragPath.mPath);
     std::stringstream vShaderStream, fShaderStream;
     vShaderStream << vShaderFile.rdbuf();
     fShaderStream << fShaderFile.rdbuf();

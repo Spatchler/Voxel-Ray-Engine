@@ -3,6 +3,6 @@
 namespace RTVE {
     class ComputeShader: public Shader {
     public:
-      ComputeShader(const std::string& pPath);
+      ComputeShader(const Path& pPath);
     };
 }

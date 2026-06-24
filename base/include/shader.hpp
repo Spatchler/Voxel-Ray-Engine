@@ -4,7 +4,8 @@
 #include <sstream>
 #include <print>
 #include <vector>
-#include <filesystem>
+
+#include "utils.hpp"
 
 #include <glad/glad.h>
 
@@ -19,9 +20,9 @@ namespace RTVE {
   class Shader {
   public:
     Shader() = default;
-    Shader(const std::filesystem::path& pVertexPath, const std::filesystem::path& pFragPath);
+    Shader(const Path& pVertexPath, const Path& pFragPath);
 
-    void load(const std::filesystem::path& pVertexPath, const std::filesystem::path& pFragPath);
+    void load(const Path& pVertexPath, const Path& pFragPath);
 
     void use() const;
     GLuint getID();
