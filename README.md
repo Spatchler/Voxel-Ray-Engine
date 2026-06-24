@@ -1,5 +1,6 @@
 # Voxel Ray Engine
 
+![](.github/sponza2048Coloured.png)
 ![](.github/sponzaTextureIssueFixed.png)
 ![](.github/sibenikNoTextureIssue.png)
 
