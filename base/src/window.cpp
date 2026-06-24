@@ -12,7 +12,21 @@ void RTVE::GLFWmouseCallback(GLFWwindow* pWindow, double pX, double pY) {
 
 void RTVE::Window::init(const char* pTitle) {
   // GLFW Init and configure
-  glfwInit();
+  if (std::getenv("RENDERDOC") != nullptr) {
+    std::println("Detected renderdoc using GLFW_PLATFORM=GLFW_PLATFORM_X11 and GLFW_CONTEXT_CREATION_API=GLFW_EGL_CONTEXT_API");
+    glfwWindowHint(GLFW_PLATFORM, GLFW_PLATFORM_X11);
+  }
+
+  if (!glfwInit()) {
+    glfwTerminate();
+    throw std::runtime_error("Failed to init GLFW");
+  }
+
+  if (std::getenv("RENDERDOC") != nullptr)
+    glfwWindowHint(GLFW_CONTEXT_CREATION_API, GLFW_EGL_CONTEXT_API);
+  if ((std::getenv("RENDERDOC") != nullptr) && (glfwGetPlatform() == GLFW_PLATFORM_WAYLAND))
+    std::println("Failed to switch platform for renderdoc: running on native wayland");
+
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
   glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
@@ -25,9 +39,8 @@ void RTVE::Window::init(const char* pTitle) {
   mSize.y = 720;
   mWindow = glfwCreateWindow(mSize.x, mSize.y, pTitle, NULL, NULL);
   if (mWindow == NULL) {
-    std::println("Failed to create GLFW window");
     glfwTerminate();
-    return;
+    throw std::runtime_error("Failed to create GLFW window");
   }
   glfwMakeContextCurrent(mWindow);
 
@@ -42,6 +55,11 @@ void RTVE::Window::init(const char* pTitle) {
   // GLAD Load opengl function pointers
   if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
     std::println("Failed to initialize GLAD");
+
+  std::println("GPU Vendor: {}", (const char*)glGetString(GL_VENDOR));
+  std::println("GPU Model: {}", (const char*)glGetString(GL_RENDERER));
+  std::println("GL Version: {}", (const char*)glGetString(GL_VERSION));
+  std::println("GLSL Version: {}", (const char*)glGetString(GL_SHADING_LANGUAGE_VERSION));
 
   glEnable(GL_DEPTH_TEST);
   glDepthFunc(GL_LESS);

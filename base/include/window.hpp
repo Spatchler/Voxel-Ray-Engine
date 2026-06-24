@@ -4,6 +4,7 @@
 
 #include <glad/glad.h> 
 #include <GLFW/glfw3.h>
+#include <cstdlib>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
