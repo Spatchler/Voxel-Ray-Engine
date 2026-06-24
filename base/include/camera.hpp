@@ -26,6 +26,8 @@ namespace RTVE {
   public:
     Camera();
 
+    void resizeIndicesBuffer(const size_t& pNewSize);
+
     void setDirection(float pYaw, float pPitch);
     void setYaw(float pYaw);
     void setPitch(float pPitch);
