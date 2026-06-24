@@ -64,7 +64,8 @@ void main() {
   float brightness;
   vec3 ambientLightDir = {0.5, 0.1, 0.76};
   // vec3 lightPos = {512 - 5 * sin(uTime), 100, 250 - 5 * cos(uTime)};
-  vec3 lightPos = {512, 100, 300};
+  // vec3 lightPos = {512, 100, 300}; // 1024 Sponza
+  vec3 lightPos = {1024, 300, 614}; // 2048 Sponza
   // vec3 lightDir = {sin(uTime), 0, cos(uTime)};
   // vec3 lightDir = {sin(uTime), cos(uTime), 0};
   // vec3 lightDirInv = 1.f / lightDir;

@@ -144,7 +144,7 @@ void RTVE::SparseVoxelDAG::loadFromFile(const std::string& pPath) {
   uint32_t numIndices;
   fin.read(reinterpret_cast<char*>(&numIndices), 4);
 
-  std::println("Loading {} indices", numIndices);
+  std::println("Loading {} indices", numIndices * 8);
 
   // Load indices
   mIndices.resize(numIndices);

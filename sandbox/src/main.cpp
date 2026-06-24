@@ -43,6 +43,7 @@ int main(int argc, char* argv[]) {
   camera.attachColourPalette(&palette);
 
   RTVE::SparseVoxelDAG model(modelPath);
+  camera.resizeIndicesBuffer(model.mIndices.size() * 8 * sizeof(uint32_t));
   // RTVE::SparseVoxelDAG model("sandbox/res/test.bin");
   // RTVE::SparseVoxelDAG model("sandbox/res/testC.bin");
   // RTVE::SparseVoxelDAG model("sandbox/res/highres.bin");
@@ -105,6 +106,8 @@ int main(int argc, char* argv[]) {
   uint frames = 0u;
   bool debugRendering = false, fLastPressed = false, escLastPressed = false;
   while (!window.shouldWindowClose()) {
+    std::println("CameraPos: {}, {}, {}", camera.mPos.x, camera.mPos.y, camera.mPos.z);
+
     // for (auto it = unattachedChunks.begin(); it != unattachedChunks.end();) {
     //   // camera.attachSparseVoxelDAG(&chunks.at(*it)->mSVDAG);
     //   attachedChunks.push_back(*it);

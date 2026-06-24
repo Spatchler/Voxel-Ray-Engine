@@ -58,7 +58,6 @@ project "sandbox"
     }
 
     links {
-        "GL",
         "glfw",
         "base",
         "pthread",
@@ -101,7 +100,6 @@ project "base"
     }
 
     links {
-        "GL",
         "glfw",
         "pthread",
         "dl",

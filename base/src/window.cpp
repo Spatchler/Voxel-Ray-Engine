@@ -22,8 +22,8 @@ void RTVE::Window::init(const char* pTitle) {
     throw std::runtime_error("Failed to init GLFW");
   }
 
-  if (std::getenv("RENDERDOC") != nullptr)
-    glfwWindowHint(GLFW_CONTEXT_CREATION_API, GLFW_EGL_CONTEXT_API);
+  // if (std::getenv("RENDERDOC") != nullptr)
+  if (glfwPlatformSupported(GLFW_PLATFORM_WAYLAND)) glfwWindowHint(GLFW_CONTEXT_CREATION_API, GLFW_EGL_CONTEXT_API);
   if ((std::getenv("RENDERDOC") != nullptr) && (glfwGetPlatform() == GLFW_PLATFORM_WAYLAND))
     std::println("Failed to switch platform for renderdoc: running on native wayland");
 
@@ -55,6 +55,10 @@ void RTVE::Window::init(const char* pTitle) {
   // GLAD Load opengl function pointers
   if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
     std::println("Failed to initialize GLAD");
+
+  glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+  glClear(GL_COLOR_BUFFER_BIT);
+  glfwSwapBuffers(mWindow); 
 
   std::println("GPU Vendor: {}", (const char*)glGetString(GL_VENDOR));
   std::println("GPU Model: {}", (const char*)glGetString(GL_RENDERER));

@@ -66,7 +66,7 @@ RTVE::Camera::Camera()
   glCreateBuffers(1, &mSVDAGindicesSSBO);
   {
     ScopedTimer t("Allocating indices buffer");
-    glNamedBufferStorage(mSVDAGindicesSSBO, 1000000000 * sizeof(uint32_t), NULL, GL_DYNAMIC_STORAGE_BIT);
+  glNamedBufferStorage(mSVDAGindicesSSBO, 10000000 * sizeof(uint32_t), NULL, GL_DYNAMIC_STORAGE_BIT);
   }
   // Texture Data buffer
   glCreateBuffers(1, &mSVDAGtextureDataSSBO);
@@ -84,6 +84,13 @@ RTVE::Camera::Camera()
   glCreateBuffers(1, &mMetadataSSBO);
   mSVDAGMetadata = std::vector<Metadata>(100, {0, 0, 0, 0, glm::tvec3<float>(0, 0, 0), 0});
   glNamedBufferData(mMetadataSSBO, mSVDAGMetadata.size() * sizeof(Metadata), &mSVDAGMetadata.at(0), GL_DYNAMIC_DRAW);
+}
+
+void RTVE::Camera::resizeIndicesBuffer(const size_t& pNewSize) {
+  glDeleteBuffers(1, &mSVDAGindicesSSBO);
+  glCreateBuffers(1, &mSVDAGindicesSSBO);
+  ScopedTimer t("Reallocating indices buffer");
+  glNamedBufferStorage(mSVDAGindicesSSBO, pNewSize, NULL, GL_DYNAMIC_STORAGE_BIT);
 }
 
 void RTVE::Camera::setDirection(float pYaw, float pPitch) {
