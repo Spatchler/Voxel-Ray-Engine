@@ -106,8 +106,6 @@ int main(int argc, char* argv[]) {
   uint frames = 0u;
   bool debugRendering = false, fLastPressed = false, escLastPressed = false;
   while (!window.shouldWindowClose()) {
-    std::println("CameraPos: {}, {}, {}", camera.mPos.x, camera.mPos.y, camera.mPos.z);
-
     // for (auto it = unattachedChunks.begin(); it != unattachedChunks.end();) {
     //   // camera.attachSparseVoxelDAG(&chunks.at(*it)->mSVDAG);
     //   attachedChunks.push_back(*it);
@@ -174,6 +172,9 @@ int main(int argc, char* argv[]) {
       camera.moveLeft(cameraSpeed);
     if (window.getKeyGLFW(GLFW_KEY_D) == GLFW_PRESS)
       camera.moveRight(cameraSpeed);
+
+    if (window.getKeyGLFW(GLFW_KEY_U) == GLFW_PRESS)
+      camera.setLightPos(camera.mPos);
 
     if (window.getKeyGLFW(GLFW_KEY_F) == GLFW_PRESS && !fLastPressed) {
       fLastPressed = true;

@@ -27,6 +27,7 @@ namespace RTVE {
     Camera();
 
     void resizeIndicesBuffer(const size_t& pNewSize);
+    void setLightPos(const glm::vec3& pPos);
 
     void setDirection(float pYaw, float pPitch);
     void setYaw(float pYaw);

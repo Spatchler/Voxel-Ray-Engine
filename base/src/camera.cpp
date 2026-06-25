@@ -93,6 +93,10 @@ void RTVE::Camera::resizeIndicesBuffer(const size_t& pNewSize) {
   glNamedBufferStorage(mSVDAGindicesSSBO, pNewSize, NULL, GL_DYNAMIC_STORAGE_BIT);
 }
 
+void RTVE::Camera::setLightPos(const glm::vec3& pPos) {
+  mSVDAGColouredShader.setVec3("uLightPos", pPos);
+}
+
 void RTVE::Camera::setDirection(float pYaw, float pPitch) {
   mYaw = pYaw;
   mPitch = pPitch;
