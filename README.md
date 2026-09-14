@@ -1,7 +1,7 @@
 # Voxel Ray Engine
 
-![](.github/Sponza2.png)
-![](.github/Sponza4.png)
+![](.github/Sponza4096.png)
+![](.github/Sponza4096Lion.png)
 
 A Sparse Voxel DAG ray caster for [VMesh-CLI](https://github.com/Spatchler/VMesh-CLI) vm8 files written in C++ with OpenGL.
 
