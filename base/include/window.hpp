@@ -41,7 +41,7 @@ namespace RTVE {
     double getTime();
 
     std::function<void(glm::vec2)> mouseCallback;
-    std::function<void(glm::vec2)> framebufferSizeCallback;
+    std::function<void(glm::vec2)> framebufferSizeCallback = [](glm::vec2 pSize){ return; };
   private:
     Window() {};
     static Window sInstance;

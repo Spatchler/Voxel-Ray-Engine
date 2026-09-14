@@ -112,12 +112,12 @@ void main() {
     }
   }
 
-  outCol.r = min(1, max(0, outCol.r * brightness * shadowMultiplier));
-  outCol.g = min(1, max(0, outCol.g * brightness * shadowMultiplier));
-  outCol.b = min(1, max(0, outCol.b * brightness * shadowMultiplier));
-  // outCol.r = min(1, max(0, outCol.r * brightness));
-  // outCol.g = min(1, max(0, outCol.g * brightness));
-  // outCol.b = min(1, max(0, outCol.b * brightness));
+  // outCol.r = min(1, max(0, outCol.r * brightness * shadowMultiplier));
+  // outCol.g = min(1, max(0, outCol.g * brightness * shadowMultiplier));
+  // outCol.b = min(1, max(0, outCol.b * brightness * shadowMultiplier));
+  outCol.r = min(1, max(0, outCol.r * brightness));
+  outCol.g = min(1, max(0, outCol.g * brightness));
+  outCol.b = min(1, max(0, outCol.b * brightness));
   // outCol.r = min(1, max(0, outCol.r * shadowMultiplier));
   // outCol.g = min(1, max(0, outCol.g * shadowMultiplier));
   // outCol.b = min(1, max(0, outCol.b * shadowMultiplier));

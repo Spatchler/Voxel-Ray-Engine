@@ -7,6 +7,7 @@
 #include "skybox.hpp"
 #include "palette.hpp"
 #include "utils.hpp"
+#include "voxelGrid.hpp"
 
 namespace RTVE {
   struct Node {
@@ -26,7 +27,7 @@ namespace RTVE {
   public:
     Camera();
 
-    void resizeIndicesBuffer(const size_t& pNewSize);
+    void reallocateIndicesBuffer(const size_t& pNewSize);
     void setLightPos(const glm::vec3& pPos);
 
     void setDirection(float pYaw, float pPitch);
@@ -48,8 +49,10 @@ namespace RTVE {
     
     void attachTexturePalette(TexturePalette* pPalette);
     void attachColourPalette(ColourPalette* pPalette);
-    void attachSparseVoxelDAG(SparseVoxelDAG* pSVDAG);
-    void detachSparseVoxelDAG(SparseVoxelDAG* pSVDAG);
+    void attach(SparseVoxelDAG* pSVDAG);
+    void detach(SparseVoxelDAG* pSVDAG);
+    void attach(VoxelGrid* pGrid);
+    void detach(VoxelGrid* pGrid);
     void attachSkybox(Skybox* pSkybox);
     void detachSkybox();
 

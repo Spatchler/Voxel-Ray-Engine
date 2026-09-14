@@ -36,7 +36,7 @@ GLuint RTVE::TexturePalette::getTexID() {
 }
 
 RTVE::TextureVoxelData* RTVE::TexturePalette::getStart() {
-  return &mData.at(0);
+  return mData.data();
 }
 
 RTVE::ColourPalette::ColourPalette(std::vector<RTVE::ColourVoxelData> pData)
@@ -75,6 +75,6 @@ RTVE::ColourPalette::ColourPalette(const std::string& pPath) {
 }
 
 RTVE::ColourVoxelData* RTVE::ColourPalette::getStart() {
-  return &mData.at(0);
+  return mData.data();
 }
 

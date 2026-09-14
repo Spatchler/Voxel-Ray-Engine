@@ -7,13 +7,16 @@
 // #include "chunk.hpp"
 
 int main(int argc, char* argv[]) {
-  if (argc < 2) throw std::invalid_argument("No path provided");
+  if (argc < 3) throw std::invalid_argument("Need to pass <voxel data format(vm8, vm64, vmu, vmc)> <data path with not extension; should be same for palette and voxel data>");
+  std::string dataFmt = argv[1];
+  if (dataFmt != "vm8" && dataFmt != "vm64" && dataFmt != "vmu" && dataFmt != "vmc") throw std::invalid_argument("Voxel data format arg needs to be one of (vm8, vm64, vmu, vmc)");
   RTVE::Window& window = RTVE::Window::get();
   window.init("RTVE Demo");
   window.captureCursor();
   window.setClearColor(glm::vec4(0.1f, 0.1f, 0.1f, 0.f));
 
   RTVE::Camera camera;
+  camera.updateViewportSize(window.getSize());
   RTVE::Skybox skybox({ RTVE::Path("res/skybox/right.jpeg"),
                         RTVE::Path("res/skybox/left.jpeg"),
                         RTVE::Path("res/skybox/top.jpeg"),
@@ -35,19 +38,36 @@ int main(int argc, char* argv[]) {
   //                               {glm::vec4(0.32f, 0.65f, 0.20f, 0.f)},
   //                               {glm::vec4(0.28f, 0.59f, 1.00f, 0.f)},
   //                               {glm::vec4(0.45f, 0.35f, 0.21f, 0.f)} });
-  std::string palettePath = argv[1];
+  std::string palettePath = argv[2];
   palettePath.append(".pal");
-  std::string modelPath = argv[1];
-  modelPath.append(".vm8");
+  std::string modelPath = argv[2];
+  modelPath.append(".");
+  modelPath.append(argv[1]);
   RTVE::ColourPalette palette(palettePath);
   camera.attachColourPalette(&palette);
 
+  window.clear();
+  window.swapBuffers();
+
   RTVE::SparseVoxelDAG model(modelPath);
-  camera.resizeIndicesBuffer(model.mIndices.size() * 8 * sizeof(uint32_t));
+  camera.reallocateIndicesBuffer(model.mIndices.size() * 8 * sizeof(uint32_t));
+  camera.attach(&model);
+
+  RTVE::VoxelGrid* voxelGrid{ nullptr };
+  RTVE::SparseVoxelDAG* octree{ nullptr };
+  // if (dataFmt == "vm8") {
+  //   octree = new RTVE::SparseVoxelDAG(modelPath);
+  //   camera.resizeIndicesBuffer(octree->mIndices.size() * 8 * sizeof(uint32_t));
+  //   camera.attach(octree);
+  // }
+  // else if (dataFmt == "vmu") {
+  //   voxelGrid = new RTVE::VoxelGrid(modelPath);
+  //   camera.attach(voxelGrid);
+  // }
+
   // RTVE::SparseVoxelDAG model("sandbox/res/test.bin");
   // RTVE::SparseVoxelDAG model("sandbox/res/testC.bin");
   // RTVE::SparseVoxelDAG model("sandbox/res/highres.bin");
-  camera.attachSparseVoxelDAG(&model);
   // model.generateDebugMesh();
 
   // model.print();
@@ -208,6 +228,9 @@ int main(int argc, char* argv[]) {
   // for (auto it: chunks)
     // delete chunks.at(it.first);
   skybox.release();
+
+  if (voxelGrid != nullptr) delete voxelGrid;
+  if (octree != nullptr) delete octree;
 
   // model.releaseDebugMesh();
 }

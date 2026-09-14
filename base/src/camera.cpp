@@ -86,7 +86,7 @@ RTVE::Camera::Camera()
   glNamedBufferData(mMetadataSSBO, mSVDAGMetadata.size() * sizeof(Metadata), &mSVDAGMetadata.at(0), GL_DYNAMIC_DRAW);
 }
 
-void RTVE::Camera::resizeIndicesBuffer(const size_t& pNewSize) {
+void RTVE::Camera::reallocateIndicesBuffer(const size_t& pNewSize) {
   glDeleteBuffers(1, &mSVDAGindicesSSBO);
   glCreateBuffers(1, &mSVDAGindicesSSBO);
   ScopedTimer t("Reallocating indices buffer");
@@ -220,7 +220,7 @@ void RTVE::Camera::attachColourPalette(ColourPalette* pPalette) {
   glNamedBufferData(mSVDAGcolourDataSSBO, pPalette->getSize() * sizeof(ColourVoxelData), pPalette->getStart(), GL_STATIC_DRAW);
 }
 
-void RTVE::Camera::attachSparseVoxelDAG(SparseVoxelDAG* pSVDAG) {
+void RTVE::Camera::attach(SparseVoxelDAG* pSVDAG) {
   // Indices buffer ---------------------------------------
   uint64_t size = pSVDAG->mIndices.size() * 8 * 4;
   glCheckError();
@@ -241,13 +241,20 @@ void RTVE::Camera::attachSparseVoxelDAG(SparseVoxelDAG* pSVDAG) {
   mSVDAGs.push_back(pSVDAG); // Push back at the end so num octrees uniform only changes after data is ready
 }
 
-void RTVE::Camera::detachSparseVoxelDAG(SparseVoxelDAG* pSVDAG) {
+void RTVE::Camera::detach(SparseVoxelDAG* pSVDAG) {
   const auto it = std::find(mSVDAGs.begin(), mSVDAGs.end(), pSVDAG);
   if (it == mSVDAGs.end()) return;
   mSVDAGMetadata.erase(mSVDAGMetadata.begin() + std::distance(mSVDAGs.begin(), it));
   mSVDAGs.erase(it);
   --mMetadataBufferSize;
   glNamedBufferSubData(mMetadataSSBO, 0, sizeof(Metadata) * mMetadataBufferSize, &mSVDAGMetadata.at(0));
+}
+
+void RTVE::Camera::attach(VoxelGrid* pGrid) {
+}
+
+void RTVE::Camera::detach(VoxelGrid* pGrid) {
+  return;
 }
 
 void RTVE::Camera::attachSkybox(Skybox* pSkybox) {

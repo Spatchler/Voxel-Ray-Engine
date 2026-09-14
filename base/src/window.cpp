@@ -12,10 +12,10 @@ void RTVE::GLFWmouseCallback(GLFWwindow* pWindow, double pX, double pY) {
 
 void RTVE::Window::init(const char* pTitle) {
   // GLFW Init and configure
-  if (std::getenv("RENDERDOC") != nullptr) {
-    std::println("Detected renderdoc using GLFW_PLATFORM=GLFW_PLATFORM_X11 and GLFW_CONTEXT_CREATION_API=GLFW_EGL_CONTEXT_API");
-    glfwWindowHint(GLFW_PLATFORM, GLFW_PLATFORM_X11);
-  }
+  // if (std::getenv("RENDERDOC") != nullptr) {
+    // std::println("Detected renderdoc using GLFW_PLATFORM=GLFW_PLATFORM_X11 and GLFW_CONTEXT_CREATION_API=GLFW_EGL_CONTEXT_API");
+    // glfwWindowHint(GLFW_PLATFORM, GLFW_PLATFORM_X11);
+  // }
 
   if (!glfwInit()) {
     glfwTerminate();
@@ -23,9 +23,9 @@ void RTVE::Window::init(const char* pTitle) {
   }
 
   // if (std::getenv("RENDERDOC") != nullptr)
-  if (glfwPlatformSupported(GLFW_PLATFORM_WAYLAND)) glfwWindowHint(GLFW_CONTEXT_CREATION_API, GLFW_EGL_CONTEXT_API);
-  if ((std::getenv("RENDERDOC") != nullptr) && (glfwGetPlatform() == GLFW_PLATFORM_WAYLAND))
-    std::println("Failed to switch platform for renderdoc: running on native wayland");
+  // if (glfwPlatformSupported(GLFW_PLATFORM_WAYLAND)) glfwWindowHint(GLFW_CONTEXT_CREATION_API, GLFW_EGL_CONTEXT_API);
+  // if ((std::getenv("RENDERDOC") != nullptr) && (glfwGetPlatform() == GLFW_PLATFORM_WAYLAND))
+    // std::println("Failed to switch platform for renderdoc: running on native wayland");
 
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
@@ -56,6 +56,7 @@ void RTVE::Window::init(const char* pTitle) {
   if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
     std::println("Failed to initialize GLAD");
 
+  updateViewportSize();
   glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
   glClear(GL_COLOR_BUFFER_BIT);
   glfwSwapBuffers(mWindow); 
@@ -121,7 +122,7 @@ void RTVE::Window::setViewportSize(glm::vec2 pSize) {
 void RTVE::Window::updateViewportSize() {
   int scrWidth, scrHeight;
   glfwGetFramebufferSize(mWindow, &scrWidth, &scrHeight);
-  glViewport(0, 0, scrWidth, scrHeight);
+  setViewportSize({scrWidth, scrHeight});
 }
 
 glm::vec2 RTVE::Window::getSize() {
