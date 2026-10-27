@@ -7,7 +7,7 @@
 #include "skybox.hpp"
 #include "palette.hpp"
 #include "utils.hpp"
-#include "voxelGrid.hpp"
+#include "VMesh/voxelGrid.hpp"
 
 namespace RTVE {
   struct Node {
@@ -51,8 +51,8 @@ namespace RTVE {
     void attachColourPalette(ColourPalette* pPalette);
     void attach(SparseVoxelDAG* pSVDAG);
     void detach(SparseVoxelDAG* pSVDAG);
-    void attach(VoxelGrid* pGrid);
-    void detach(VoxelGrid* pGrid);
+    void attach(VMesh::VoxelGrid* pGrid);
+    void detach(VMesh::VoxelGrid* pGrid);
     void attachSkybox(Skybox* pSkybox);
     void detachSkybox();
 

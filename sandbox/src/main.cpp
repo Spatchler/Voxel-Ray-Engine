@@ -1,13 +1,9 @@
 #include "RTVE.hpp"
 
-// #include <thread_pool/thread_pool.h>
-
 #include <unordered_map>
 
-// #include "chunk.hpp"
-
 int main(int argc, char* argv[]) {
-  if (argc < 3) throw std::invalid_argument("Need to pass <voxel data format(vm8, vm64, vmu, vmc)> <data path with not extension; should be same for palette and voxel data>");
+  if (argc < 3) throw std::invalid_argument("Need to pass <voxel data format(vm8, vm64, vmu, vmc)> <data path with no extension; should be same for palette and voxel data>");
   std::string dataFmt = argv[1];
   if (dataFmt != "vm8" && dataFmt != "vm64" && dataFmt != "vmu" && dataFmt != "vmc") throw std::invalid_argument("Voxel data format arg needs to be one of (vm8, vm64, vmu, vmc)");
   RTVE::Window& window = RTVE::Window::get();
@@ -25,19 +21,6 @@ int main(int argc, char* argv[]) {
                         RTVE::Path("res/skybox/back.jpeg")    });
   camera.attachSkybox(&skybox);
 
-  // RTVE::Palette palette({ "sandbox/res/textures/grass_block_top.png",
-  // RTVE::TexturePalette palette({ "sandbox/res/texturesNew/Grass_Top.png",
-  //                         // "sandbox/res/textures/grass_block_side.png",
-  //                         "sandbox/res/texturesNew/Grass_Side.png",
-  //                         "sandbox/res/textures/dirt.png",
-  //                         "sandbox/res/textures/water_still.png",
-  //                         "sandbox/res/textures/oak_log_top.png",
-  //                         "sandbox/res/textures/oak_log.png"  }, {8, 8},
-  //                       { {2,2,2,2,2,2}, {0,1,2,2,2,2}, {3,3,3,3,3,3}, {4,5,4,4,4,4} });
-  // RTVE::ColourPalette palette({ {glm::vec4(0.54f, 0.38f, 0.22f, 0.f)},
-  //                               {glm::vec4(0.32f, 0.65f, 0.20f, 0.f)},
-  //                               {glm::vec4(0.28f, 0.59f, 1.00f, 0.f)},
-  //                               {glm::vec4(0.45f, 0.35f, 0.21f, 0.f)} });
   std::string palettePath = argv[2];
   palettePath.append(".pal");
   std::string modelPath = argv[2];
@@ -53,7 +36,7 @@ int main(int argc, char* argv[]) {
   camera.reallocateIndicesBuffer(model.mIndices.size() * 8 * sizeof(uint32_t));
   camera.attach(&model);
 
-  RTVE::VoxelGrid* voxelGrid{ nullptr };
+  VMesh::VoxelGrid* voxelGrid{ nullptr };
   RTVE::SparseVoxelDAG* octree{ nullptr };
   // if (dataFmt == "vm8") {
   //   octree = new RTVE::SparseVoxelDAG(modelPath);
@@ -65,37 +48,6 @@ int main(int argc, char* argv[]) {
   //   camera.attach(voxelGrid);
   // }
 
-  // RTVE::SparseVoxelDAG model("sandbox/res/test.bin");
-  // RTVE::SparseVoxelDAG model("sandbox/res/testC.bin");
-  // RTVE::SparseVoxelDAG model("sandbox/res/highres.bin");
-  // model.generateDebugMesh();
-
-  // model.print();
-
-  // dp::thread_pool threadPool(4);
-
-  // std::unordered_map<glm::ivec2, Chunk*> chunks;
-  // std::vector<glm::ivec2> unattachedChunks;
-  // std::vector<glm::ivec2> attachedChunks;
-  // std::mutex chunksMutex;
-  // int renderDistance = 2;
-  // int renderDistance2 = renderDistance * renderDistance;
-  // int blockRenderDistance = renderDistance * CHUNK_SIZE;
-  // int blockRenderDistance2 = blockRenderDistance * blockRenderDistance;
-  // for (glm::ivec2 chunkPos(-renderDistance, -renderDistance); chunkPos.x <= renderDistance; ++chunkPos.x)
-  //   for (chunkPos.y = -renderDistance; chunkPos.y <= renderDistance; ++chunkPos.y)
-  //     if (glm::length2(glm::vec2(chunkPos)) < renderDistance2) {
-  //       chunks[chunkPos] = nullptr;
-  //       threadPool.enqueue_detach([&chunks, &unattachedChunks, chunkPos, &chunksMutex]() {
-  //         Chunk* ptr = new Chunk(chunkPos);
-  //         {
-  //           std::lock_guard<std::mutex> lock(chunksMutex);
-  //           chunks[chunkPos] = ptr;
-  //           unattachedChunks.push_back(chunkPos);
-  //         }
-  //       });
-  //     }
-  
   camera.mPos = glm::vec3(0, 0, 0);
   camera.setDirection(0, 0);
 
@@ -126,47 +78,6 @@ int main(int argc, char* argv[]) {
   uint frames = 0u;
   bool debugRendering = false, fLastPressed = false, escLastPressed = false;
   while (!window.shouldWindowClose()) {
-    // for (auto it = unattachedChunks.begin(); it != unattachedChunks.end();) {
-    //   // camera.attachSparseVoxelDAG(&chunks.at(*it)->mSVDAG);
-    //   attachedChunks.push_back(*it);
-    //   {
-    //     std::lock_guard<std::mutex> lock(chunksMutex);
-    //     it = unattachedChunks.erase(it);
-    //   }
-    // }
-
-    // glm::vec2 cameraChunkPos(camera.mPos.x / CHUNK_SIZE, camera.mPos.z / CHUNK_SIZE);
-    // cameraChunkPos = glm::floor(cameraChunkPos);
-
-    // for (auto it = attachedChunks.begin(); it != attachedChunks.end();) {
-    //   auto chunk = chunks.find(*it);
-    //   if (glm::distance2(glm::vec2(chunk->second->getChunkPos()), cameraChunkPos) > renderDistance2) {
-    //     // camera.detachSparseVoxelDAG(&chunk->second->mSVDAG);
-    //     delete chunk->second;
-    //     {
-    //       std::lock_guard<std::mutex> lock(chunksMutex);
-    //       chunks.erase(chunk);
-    //     }
-    //     it = attachedChunks.erase(it);
-    //   }
-    //   else
-    //     ++it;
-    // }
-
-    // for (glm::ivec2 chunkPos(cameraChunkPos.x - renderDistance, cameraChunkPos.y - renderDistance); chunkPos.x <= cameraChunkPos.x + renderDistance; ++chunkPos.x)
-    //   for (chunkPos.y = cameraChunkPos.y - renderDistance; chunkPos.y <= cameraChunkPos.y + renderDistance; ++chunkPos.y)
-    //     if (glm::distance2(glm::vec2(chunkPos), cameraChunkPos) < renderDistance2 && !chunks.contains(chunkPos)) {
-    //       chunks[chunkPos] = nullptr;
-    //       threadPool.enqueue_detach([&chunks, &unattachedChunks, chunkPos, &chunksMutex]() {
-    //         Chunk* ptr = new Chunk(chunkPos);
-    //         {
-    //           std::lock_guard<std::mutex> lock(chunksMutex);
-    //           chunks[chunkPos] = ptr;
-    //           unattachedChunks.push_back(chunkPos);
-    //         }
-    //       });
-    //     }
-
     float currentFrame = window.getTime();
     deltaTime = currentFrame - lastFrame;
     lastFrame = currentFrame;
@@ -224,14 +135,9 @@ int main(int argc, char* argv[]) {
     }
   }
 
-  // threadPool.wait_for_tasks();
-  // for (auto it: chunks)
-    // delete chunks.at(it.first);
   skybox.release();
 
   if (voxelGrid != nullptr) delete voxelGrid;
   if (octree != nullptr) delete octree;
-
-  // model.releaseDebugMesh();
 }
 

@@ -250,11 +250,10 @@ void RTVE::Camera::detach(SparseVoxelDAG* pSVDAG) {
   glNamedBufferSubData(mMetadataSSBO, 0, sizeof(Metadata) * mMetadataBufferSize, &mSVDAGMetadata.at(0));
 }
 
-void RTVE::Camera::attach(VoxelGrid* pGrid) {
+void RTVE::Camera::attach(VMesh::VoxelGrid* pGrid) {
 }
 
-void RTVE::Camera::detach(VoxelGrid* pGrid) {
-  return;
+void RTVE::Camera::detach(VMesh::VoxelGrid* pGrid) {
 }
 
 void RTVE::Camera::attachSkybox(Skybox* pSkybox) {
