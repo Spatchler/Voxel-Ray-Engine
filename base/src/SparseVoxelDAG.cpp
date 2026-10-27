@@ -129,7 +129,7 @@ void RTVE::SparseVoxelDAG::loadFromFile(const std::string& pPath) {
   if (str != "VMESH8") throw std::invalid_argument("Octree file not VMESH8 format");
   std::array<uint8_t, 3> fileVersion;
   fin.read(reinterpret_cast<char*>(fileVersion.data()), 3);
-  if (fileVersion[0] != 1 || fileVersion[1] != 0 || fileVersion[2] != 0) throw std::invalid_argument("Octree file not 1.0.0 version");
+  if ((fileVersion[0] != 1) || (fileVersion[1] != 0) || (fileVersion[2] != 0)) throw std::invalid_argument("Octree file not 1.0.0 version");
 
   // Read resolution
   fin.read(reinterpret_cast<char*>(&mSize), 4);
