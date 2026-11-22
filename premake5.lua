@@ -2,7 +2,7 @@ workspace "sandbox"
     architecture "x64"
     toolset "gcc"
 
-    buildoptions "--std=c++23"
+    cppdialect ("C++23")
 
     configurations {
         "debug",
@@ -12,15 +12,20 @@ workspace "sandbox"
 
     filter "configurations:debug"
         defines {"_DEBUG", "_PROFILING"}
+        runtime "Debug"
         symbols "On"
         filter {"system:linux", "action:gmake"}
             buildoptions {"-g"} -- For core files
     filter "configurations:release"
         defines {"_RELEASE"}
-        optimize "On"
+        runtime "Release"
+        optimize "Speed"
+        symbols "On"
     filter "configurations:dist"
         defines {"_DIST"}
-        optimize "On"
+        runtime "Release"
+        optimize "Speed"
+        symbols "Off"
 
     filter "system:macosx"
         defines {"_MACOSX"}
